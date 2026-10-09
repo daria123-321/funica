@@ -1,0 +1,2065 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Funica — Магазин мебели</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#1A1A1A;--accent:#C8B8A0;--bg:#F8F8F8;--surface:#FFF;--text-secondary:#8A8A8A;--border:#F0F0F0;--danger:#E63946;--success:#2D6A4F;--warning:#F4A261;--star:#F4A261;--shadow:0 30px 80px rgba(0,0,0,.15);--switch-off:#D1D1D6}
+body.dark{--primary:#F5F5F5;--accent:#C8B8A0;--bg:#1E1E1E;--surface:#121212;--text-secondary:#8A8A8A;--border:#2A2A2A;--danger:#FF6B6B;--success:#4ADE80;--shadow:0 30px 80px rgba(0,0,0,.5);--switch-off:#3A3A3A}
+body{font-family:'Inter',sans-serif;background:#E5E5E5;display:flex;justify-content:center;align-items:center;padding:40px 20px;min-height:100vh}
+#debugBanner{display:none;position:fixed;top:0;left:0;right:0;background:#E63946;color:#FFF;padding:12px 20px;font-family:monospace;font-size:13px;z-index:9999}
+#debugBanner.show{display:block}
+.phone{width:390px;height:844px;background:var(--surface);border-radius:40px;position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow)}
+.status-bar{position:absolute;top:0;left:0;right:0;height:44px;display:flex;justify-content:space-between;align-items:center;padding:0 30px;font-size:14px;font-weight:600;color:var(--primary);z-index:10;pointer-events:none}
+.phone-content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;position:relative;padding-bottom:90px}
+.phone-content::-webkit-scrollbar{display:none}
+.screen{display:none;padding:60px 20px 20px}
+.screen.active{display:block}
+.screen.slide-in{display:block;animation:slideInR .32s cubic-bezier(.22,1,.36,1)}
+.screen.slide-back{display:block;animation:slideInL .32s cubic-bezier(.22,1,.36,1)}
+.screen.fade-in{display:block;animation:fadeIn .28s ease}
+@keyframes slideInR{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideInL{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.screen.onboarding{padding:0;position:absolute;inset:0;overflow:hidden}
+.onboarding-wrapper{height:100%;display:flex;flex-direction:column;padding:60px 30px 30px}
+.onboarding-slides{flex:1;position:relative;overflow:hidden;min-height:0}
+.onboarding-slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transform:translateX(30px);transition:opacity .4s,transform .4s;pointer-events:none;padding:0 10px}
+.onboarding-slide.active{opacity:1;transform:translateX(0);pointer-events:auto}
+.onboarding-slide.prev{transform:translateX(-30px)}
+.onboarding-illustration{width:200px;height:200px;border-radius:50%;background:linear-gradient(135deg,#F8F8F8,#E8E0D5);display:flex;align-items:center;justify-content:center;margin-bottom:36px;font-size:90px;position:relative;animation:floatY 3s ease-in-out infinite;flex-shrink:0}
+body.dark .onboarding-illustration{background:linear-gradient(135deg,#1E1E1E,#2A2A2A)}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.onboarding-title{font-family:'Playfair Display',serif;font-size:30px;font-weight:700;color:var(--primary);margin-bottom:16px;line-height:1.15;max-width:280px}
+.onboarding-text{font-size:15px;line-height:1.55;color:var(--text-secondary);max-width:280px}
+.onboarding-footer{padding-top:24px;flex-shrink:0}
+.onboarding-dots{display:flex;justify-content:center;gap:8px;margin-bottom:24px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s;cursor:pointer}
+.dot.active{background:var(--primary);width:24px;border-radius:4px}
+.onboarding-btn{width:100%;background:var(--primary);color:var(--surface);border:none;border-radius:16px;padding:18px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+body.dark .onboarding-btn{color:#121212}
+.onboarding-skip{background:none;border:none;color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;padding:14px;width:100%;font-family:inherit}
+.auth-container{padding:60px 30px 30px;min-height:100%;display:flex;flex-direction:column;justify-content:center;position:relative}
+.auth-logo{font-size:64px;text-align:center;margin-bottom:20px;line-height:1}
+.auth-title{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--primary);text-align:center;margin-bottom:12px}
+.auth-subtitle{font-size:15px;color:var(--text-secondary);text-align:center;line-height:1.5;margin-bottom:40px}
+.auth-subtitle strong{color:var(--primary);font-weight:600}
+.phone-input-wrapper{display:flex;align-items:center;background:var(--bg);border:2px solid transparent;border-radius:16px;padding:4px 20px;margin-bottom:16px}
+.phone-input-wrapper:focus-within{border-color:var(--accent)}
+.phone-prefix{font-size:17px;font-weight:600;color:var(--primary);padding-right:10px;border-right:1px solid var(--border);margin-right:10px}
+.phone-input{flex:1;border:none;background:transparent;outline:none;padding:16px 0;font-size:17px;color:var(--primary);font-family:inherit;letter-spacing:.5px}
+.phone-input::placeholder{color:var(--text-secondary)}
+.auth-btn{width:100%;background:var(--primary);color:var(--surface);border:none;border-radius:16px;padding:18px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:8px}
+body.dark .auth-btn{color:#121212}
+.auth-btn:disabled{opacity:.4;cursor:not-allowed}
+.auth-note{font-size:12px;color:var(--text-secondary);text-align:center;line-height:1.5;margin-top:24px}
+.auth-back{position:absolute;top:60px;left:20px;width:42px;height:42px;background:var(--bg);border:none;border-radius:50%;font-size:18px;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5}
+.code-inputs{display:flex;justify-content:center;gap:12px;margin-bottom:16px}
+.code-input{width:60px;height:70px;background:var(--bg);border:2px solid transparent;border-radius:16px;text-align:center;font-size:28px;font-weight:700;color:var(--primary);font-family:inherit;outline:none}
+.code-input:focus,.code-input.filled{border-color:var(--accent)}
+.code-hint{font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:24px}
+.code-hint strong{color:var(--accent);font-weight:700;padding:2px 8px;background:var(--bg);border-radius:6px}
+.resend-text{font-size:13px;color:var(--text-secondary);text-align:center;margin-top:20px}
+.resend-text span{color:var(--primary);font-weight:600}
+.auth-guest-hint{text-align:center;font-size:13px;color:var(--text-secondary);margin-top:20px}
+.auth-guest-hint a{color:var(--primary);font-weight:600;cursor:pointer;text-decoration:underline}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.greeting-small{font-size:13px;color:var(--text-secondary);margin-bottom:4px}
+.greeting-name{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--primary)}
+.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#8A7A6A);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+.avatar.guest{background:linear-gradient(135deg,#B0B0B0,#707070);font-size:20px}
+.guest-banner{background:linear-gradient(135deg,#F4A261 0%,#E76F51 100%);border-radius:18px;padding:18px 20px;margin-bottom:20px;color:#FFF;display:flex;align-items:center;gap:14px;cursor:pointer}
+.guest-banner-icon{font-size:28px;line-height:1;flex-shrink:0}
+.guest-banner-text{flex:1}
+.guest-banner-title{font-size:15px;font-weight:700;margin-bottom:2px}
+.guest-banner-sub{font-size:12px;opacity:.9;line-height:1.4}
+.search{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:14px;padding:14px 18px;margin-bottom:12px;border:2px solid transparent}
+.search:focus-within{border-color:var(--accent)}
+.search svg{width:18px;height:18px;stroke:var(--text-secondary);stroke-width:2;fill:none;flex-shrink:0}
+.search input{border:none;background:transparent;outline:none;font-size:14px;color:var(--primary);width:100%;font-family:inherit}
+.search input::placeholder{color:var(--text-secondary)}
+.search-clear{background:none;border:none;font-size:16px;color:var(--text-secondary);cursor:pointer;padding:0 4px;display:none}
+.search-clear.show{display:block}
+.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:20px;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.filter-chip{flex-shrink:0;padding:8px 16px;background:var(--bg);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:500;color:var(--primary);cursor:pointer;font-family:inherit}
+.filter-chip:hover{background:var(--accent);border-color:var(--accent);color:#FFF}
+.filter-chip.active{background:var(--primary);color:var(--surface);border-color:var(--primary)}
+body.dark .filter-chip.active{color:#121212}
+.banner{background:var(--primary);border-radius:22px;padding:22px;margin-bottom:26px;position:relative;overflow:hidden;min-height:150px}
+body.dark .banner{background:#2A2A2A}
+.banner-text{position:relative;z-index:2;display:flex;flex-direction:column;justify-content:center}
+.banner-label{color:var(--accent);font-size:11px;font-weight:700;letter-spacing:1.5px;margin-bottom:8px}
+.banner-title{font-family:'Playfair Display',serif;color:#FFF;font-size:19px;font-weight:600;line-height:1.25;margin-bottom:16px}
+.banner-btn{background:#FFF;color:#1A1A1A;border:none;border-radius:10px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;align-self:flex-start}
+.banner-img{position:absolute;right:-20px;top:50%;transform:translateY(-50%);width:160px;height:160px;object-fit:cover;border-radius:16px;opacity:.9}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.section-header h3{font-size:17px;font-weight:600;color:var(--primary)}
+.section-header a{font-size:13px;color:var(--text-secondary);font-weight:500;cursor:pointer}
+.products{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding-bottom:20px}
+.products.list-view{grid-template-columns:1fr}
+.product-card{position:relative;cursor:pointer}
+.product-img{width:100%;aspect-ratio:1;border-radius:18px;margin-bottom:10px;background-size:cover;background-position:center;background-color:var(--bg)}
+.products.list-view .product-card{display:flex;gap:14px;background:var(--bg);border-radius:18px;padding:12px}
+.products.list-view .product-img{width:100px;height:100px;aspect-ratio:1;margin:0;flex-shrink:0}
+.products.list-view .product-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.fav-btn{position:absolute;top:10px;right:10px;width:34px;height:34px;background:#FFF;border:none;border-radius:50%;font-size:16px;color:#1A1A1A;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.products.list-view .fav-btn{top:12px;right:12px}
+.product-title{font-size:14px;font-weight:500;color:var(--primary);margin-bottom:4px}
+.product-price{font-size:14px;font-weight:700;color:var(--primary)}
+.screen-header{display:flex;align-items:center;gap:14px;margin-bottom:20px;margin-top:-8px}
+.screen-header .back-icon{width:42px;height:42px;background:var(--bg);border:none;border-radius:50%;font-size:18px;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.screen-header h1{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--primary)}
+.screen-header .count-badge{margin-left:auto;background:var(--bg);color:var(--text-secondary);font-size:13px;font-weight:600;padding:6px 12px;border-radius:12px}
+.catalog-controls{display:flex;gap:8px;margin-bottom:12px}
+.ctrl-btn{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:500;color:var(--primary);cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+.ctrl-btn.active{background:var(--primary);color:var(--surface);border-color:var(--primary)}
+body.dark .ctrl-btn.active{color:#121212}
+.product-hero{position:relative;margin:-60px -20px 20px;height:380px;background-size:cover;background-position:center;background-color:var(--bg);border-radius:0 0 30px 30px}
+.back-btn,.fav-detail-btn{position:absolute;top:60px;width:42px;height:42px;background:rgba(255,255,255,.95);border:none;border-radius:50%;font-size:18px;color:#1A1A1A;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.back-btn{left:20px}.fav-detail-btn{right:20px}
+.product-info h1{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--primary);margin-bottom:8px}
+.product-rating{display:flex;align-items:center;gap:8px;margin-bottom:18px;font-size:14px;color:var(--text-secondary);cursor:pointer}
+.product-rating .stars{color:var(--star);font-size:16px}
+.product-detail-price{font-size:28px;font-weight:700;color:var(--primary);margin-bottom:22px}
+.detail-section-title{font-size:15px;font-weight:600;color:var(--primary);margin-bottom:12px}
+.color-options{display:flex;gap:12px;margin-bottom:22px}
+.color-option{width:40px;height:40px;border-radius:50%;cursor:pointer;border:3px solid transparent}
+.color-option.active{border-color:var(--primary)}
+.product-description{font-size:14px;line-height:1.6;color:var(--text-secondary);margin-bottom:24px}
+.product-bottom-bar{position:sticky;bottom:0;background:var(--surface);padding:16px 0;margin:0 -20px;padding-left:20px;padding-right:20px;display:flex;gap:12px;align-items:center}
+.add-to-cart-btn{flex:1;background:var(--primary);color:var(--surface);border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+body.dark .add-to-cart-btn{color:#121212}
+.reviews-section{margin-top:24px;padding-top:24px;border-top:1px solid var(--border)}
+.reviews-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.reviews-header h3{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--primary)}
+.reviews-summary{display:flex;gap:20px;background:var(--bg);border-radius:18px;padding:20px;margin-bottom:20px;align-items:center}
+.reviews-avg{text-align:center;flex-shrink:0}
+.reviews-avg-value{font-family:'Playfair Display',serif;font-size:44px;font-weight:700;color:var(--primary);line-height:1;margin-bottom:6px}
+.reviews-avg-stars{color:var(--star);font-size:16px;letter-spacing:2px;margin-bottom:6px}
+.reviews-avg-count{font-size:12px;color:var(--text-secondary)}
+.reviews-distribution{flex:1;display:flex;flex-direction:column;gap:6px}
+.dist-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.dist-label{color:var(--text-secondary);min-width:26px;font-weight:500}
+.dist-bar{flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
+.dist-fill{height:100%;background:var(--star);border-radius:3px}
+.dist-count{color:var(--text-secondary);min-width:24px;text-align:right;font-size:11px}
+.review-add-btn{width:100%;background:var(--bg);color:var(--primary);border:2px dashed var(--border);border-radius:14px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:20px}
+.review-item{background:var(--bg);border-radius:18px;padding:16px;margin-bottom:12px}
+.review-header{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.review-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#FFF;font-weight:700;font-size:15px;flex-shrink:0}
+.review-info{flex:1;min-width:0}
+.review-author{font-size:14px;font-weight:600;color:var(--primary);margin-bottom:3px}
+.review-stars{color:var(--star);font-size:13px;letter-spacing:1px}
+.review-date{font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.review-text{font-size:14px;line-height:1.55;color:var(--text-secondary)}
+.review-modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;border-radius:40px;overflow:hidden}
+.review-modal-overlay.show{display:flex;animation:fadeIn .25s}
+.review-modal{width:100%;background:var(--surface);border-radius:26px 26px 0 0;padding:24px 24px 32px;max-height:85%;overflow-y:auto}
+.review-modal-handle{width:44px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.review-modal-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--primary);margin-bottom:6px;text-align:center}
+.review-modal-subtitle{font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:22px}
+.star-selector{display:flex;justify-content:center;gap:10px;margin-bottom:24px}
+.star-selector-btn{background:none;border:none;font-size:38px;color:var(--border);cursor:pointer;line-height:1;padding:0}
+.star-selector-btn.active{color:var(--star)}
+.review-textarea{width:100%;min-height:110px;background:var(--bg);border:2px solid transparent;border-radius:14px;padding:14px 18px;font-size:14px;color:var(--primary);font-family:inherit;outline:none;resize:none;margin-bottom:12px;line-height:1.5}
+.review-submit-btn{width:100%;background:var(--primary);color:var(--surface);border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px}
+body.dark .review-submit-btn{color:#121212}
+.review-submit-btn:disabled{opacity:.4;cursor:not-allowed}
+.review-cancel-btn{width:100%;background:none;border:none;color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;padding:12px;font-family:inherit}
+.cart-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--primary);margin-bottom:20px}
+.cart-item{display:flex;gap:14px;background:var(--bg);border-radius:18px;padding:14px;margin-bottom:12px;align-items:center}
+.cart-item-img{width:80px;height:80px;border-radius:14px;background-size:cover;background-position:center;background-color:var(--border);flex-shrink:0}
+.cart-item-info{flex:1;min-width:0}
+.cart-item-title{font-size:14px;font-weight:600;color:var(--primary);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-item-price{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:8px}
+.qty-controls{display:flex;align-items:center;gap:10px}
+.qty-btn{width:28px;height:28px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qty-value{font-size:14px;font-weight:600;color:var(--primary);min-width:20px;text-align:center}
+.remove-btn{background:none;border:none;font-size:18px;cursor:pointer;opacity:.4;padding:4px;color:var(--primary)}
+.promo-section{margin-top:20px;margin-bottom:20px;width:100%;overflow:hidden}
+.promo-input-wrapper{display:flex;gap:8px;margin-bottom:8px;width:100%}
+.promo-input{flex:1;min-width:0;background:var(--bg);border:2px solid transparent;border-radius:14px;padding:14px 16px;font-size:13px;color:var(--primary);font-family:inherit;outline:none;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+.promo-input::placeholder{letter-spacing:0;text-transform:none;font-weight:400;font-size:13px}
+.promo-apply-btn{flex-shrink:0;background:var(--primary);color:var(--surface);border:none;border-radius:14px;padding:0 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+body.dark .promo-apply-btn{color:#121212}
+.promo-message{font-size:13px;line-height:1.4;padding:0 4px;display:none}
+.promo-message.show{display:block}
+.promo-message.success{color:var(--success);font-weight:600}
+.promo-message.error{color:var(--danger);font-weight:500}
+.promo-applied{display:flex;align-items:center;gap:12px;background:rgba(45,106,79,.12);border:2px solid var(--success);border-radius:14px;padding:14px 16px;margin-bottom:8px}
+.promo-applied-icon{width:38px;height:38px;background:var(--success);color:#FFF;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.promo-applied-info{flex:1;min-width:0}
+.promo-applied-code{font-size:14px;font-weight:700;color:var(--success);letter-spacing:1px;margin-bottom:2px}
+.promo-applied-desc{font-size:12px;color:var(--text-secondary)}
+.promo-remove-btn{background:none;border:none;color:var(--danger);font-size:20px;cursor:pointer;padding:4px 8px;line-height:1}
+.cart-summary{background:var(--bg);border-radius:18px;padding:20px;margin-top:20px;margin-bottom:20px}
+.summary-row{display:flex;justify-content:space-between;font-size:14px;color:var(--text-secondary);margin-bottom:10px}
+.summary-row.total{font-size:18px;font-weight:700;color:var(--primary);padding-top:14px;margin-top:14px;border-top:1px solid var(--border);margin-bottom:0}
+.summary-row.bonus-row,.summary-row.promo-row{color:var(--success);font-weight:600}
+.checkout-btn{width:100%;background:var(--primary);color:var(--surface);border:none;border-radius:14px;padding:18px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:20px}
+body.dark .checkout-btn{color:#121212}
+.empty-state{text-align:center;padding:60px 20px}
+.empty-state .icon{font-size:60px;margin-bottom:20px;display:block;color:var(--primary);line-height:1}
+.empty-state h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--primary);margin-bottom:8px}
+.empty-state p{font-size:14px;color:var(--text-secondary);margin-bottom:24px;line-height:1.5}
+.empty-state button{background:var(--primary);color:var(--surface);border:none;border-radius:12px;padding:14px 32px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+body.dark .empty-state button{color:#121212}
+.checkout-section{margin-bottom:20px}
+.checkout-section-title{font-size:15px;font-weight:600;color:var(--primary);margin-bottom:12px}
+.input-field{width:100%;background:var(--bg);border:1px solid transparent;border-radius:14px;padding:14px 18px;font-size:14px;color:var(--primary);font-family:inherit;margin-bottom:10px;outline:none}
+.input-field::placeholder{color:var(--text-secondary)}
+.payment-option{display:flex;align-items:center;gap:12px;background:var(--bg);border:2px solid transparent;border-radius:14px;padding:14px 18px;margin-bottom:10px;cursor:pointer}
+.payment-option.active{border-color:var(--primary)}
+.payment-option .icon{font-size:22px}
+.payment-option .label{font-size:14px;font-weight:500;color:var(--primary);flex:1}
+.bonus-toggle{display:flex;align-items:center;justify-content:space-between;background:var(--bg);border-radius:14px;padding:16px 18px;margin-bottom:12px;cursor:pointer}
+.bonus-toggle-text{flex:1}
+.bonus-toggle-title{font-size:14px;font-weight:600;color:var(--primary);margin-bottom:4px}
+.bonus-toggle-subtitle{font-size:12px;color:var(--text-secondary)}
+.bonus-card{background:linear-gradient(135deg,#1A1A1A 0%,#3A3A3A 60%,#C8B8A0 140%);border-radius:26px;padding:26px;color:#FFF;position:relative;overflow:hidden;margin-bottom:22px;min-height:200px;box-shadow:0 15px 40px rgba(0,0,0,.2)}
+.bonus-card::before{content:'';position:absolute;top:-50%;right:-30%;width:320px;height:320px;background:radial-gradient(circle,rgba(200,184,160,.35) 0%,transparent 70%);border-radius:50%}
+.bonus-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;position:relative;z-index:2}
+.bonus-card-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:1px}
+.bonus-card-tier{font-size:11px;font-weight:700;letter-spacing:1.5px;color:#C8B8A0;padding:5px 12px;background:rgba(200,184,160,.15);border-radius:20px;border:1px solid rgba(200,184,160,.4)}
+.bonus-card-label{font-size:12px;color:rgba(255,255,255,.7);letter-spacing:1px;margin-bottom:8px;position:relative;z-index:2}
+.bonus-card-value{font-family:'Playfair Display',serif;font-size:42px;font-weight:700;margin-bottom:4px;position:relative;z-index:2;display:flex;align-items:baseline;gap:8px}
+.bonus-card-value small{font-size:18px;font-weight:500;opacity:.85}
+.bonus-card-hint{font-size:12px;color:rgba(255,255,255,.65);position:relative;z-index:2}
+.bonus-card-bottom{display:flex;justify-content:space-between;align-items:flex-end;margin-top:32px;position:relative;z-index:2}
+.bonus-card-number{font-family:'Courier New',monospace;font-size:15px;letter-spacing:3px;color:rgba(255,255,255,.85)}
+.bonus-card-holder-label{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1.5px;margin-bottom:4px}
+.bonus-card-holder{font-size:13px;font-weight:600}
+.bonus-progress{background:var(--bg);border-radius:18px;padding:20px;margin-bottom:22px}
+.bonus-progress-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.bonus-progress-title{font-size:14px;font-weight:600;color:var(--primary)}
+.bonus-progress-count{font-size:13px;color:var(--text-secondary)}
+.bonus-progress-bar{height:8px;background:var(--surface);border-radius:4px;overflow:hidden;margin-bottom:10px}
+.bonus-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),#8A7A6A);border-radius:4px}
+.bonus-progress-hint{font-size:12px;color:var(--text-secondary);line-height:1.4}
+.bonus-history-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--primary);margin-bottom:14px}
+.bonus-history-item{display:flex;gap:14px;align-items:center;background:var(--bg);border-radius:16px;padding:14px 16px;margin-bottom:10px}
+.bonus-history-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;background:var(--surface);flex-shrink:0}
+body.dark .bonus-history-icon{background:#1E1E1E}
+.bonus-history-info{flex:1;min-width:0}
+.bonus-history-title-text{font-size:14px;font-weight:600;color:var(--primary);margin-bottom:2px}
+.bonus-history-date{font-size:12px;color:var(--text-secondary)}
+.bonus-history-amount{font-size:15px;font-weight:700;white-space:nowrap}
+.bonus-history-amount.plus{color:var(--success)}
+.bonus-history-amount.minus{color:var(--danger)}
+.profile-header{text-align:center;padding:20px 0 30px}
+.profile-avatar{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#8A7A6A);display:flex;align-items:center;justify-content:center;color:#FFF;font-weight:700;font-size:32px;margin:0 auto 16px}
+.profile-avatar.guest{background:linear-gradient(135deg,#B0B0B0,#707070);font-size:40px}
+.profile-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--primary);margin-bottom:4px}
+.profile-email{font-size:14px;color:var(--text-secondary)}
+.profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px}
+.stat-card{background:var(--bg);border-radius:16px;padding:16px 12px;text-align:center;cursor:pointer}
+.stat-value{font-size:20px;font-weight:700;color:var(--primary);margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--text-secondary)}
+.menu-list{background:var(--bg);border-radius:18px;overflow:hidden;margin-bottom:16px}
+.menu-item{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;border-bottom:1px solid var(--border)}
+.menu-item:last-child{border-bottom:none}
+.menu-item .icon{font-size:20px;line-height:1}
+.menu-item .label{flex:1;font-size:14px;font-weight:500;color:var(--primary)}
+.menu-item .value{font-size:13px;color:var(--text-secondary);margin-right:8px}
+.menu-item .arrow{font-size:16px;color:var(--text-secondary)}
+.menu-item.danger .label{color:var(--danger)}
+.guest-cta{background:linear-gradient(135deg,var(--accent) 0%,#8A7A6A 100%);border-radius:20px;padding:22px 20px;margin-bottom:20px;color:#FFF;text-align:center}
+.guest-cta-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.guest-cta-text{font-size:13px;opacity:.9;line-height:1.5;margin-bottom:16px}
+.guest-cta-btn{background:#FFF;color:#1A1A1A;border:none;border-radius:12px;padding:13px 28px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.switch{width:48px;height:28px;background:var(--switch-off);border-radius:14px;position:relative;flex-shrink:0;transition:background .3s}
+.switch-knob{position:absolute;top:2px;left:2px;width:24px;height:24px;background:#FFF;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,.15);transition:transform .3s}
+body.dark .switch{background:var(--accent)}
+body.dark .switch-knob{transform:translateX(20px)}
+.switch.on{background:var(--accent)}
+.switch.on .switch-knob{transform:translateX(20px)}
+.bottom-nav{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;z-index:40;pointer-events:none;padding:0 16px;transition:transform .3s ease,opacity .3s ease}
+.bottom-nav.hidden{display:flex;transform:translateY(120%);opacity:0;pointer-events:none}
+.nav-inner{pointer-events:auto;display:flex;align-items:center;justify-content:space-around;position:relative;width:100%;max-width:358px;height:64px;padding:0 6px;background:rgba(20,20,22,.85);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border-radius:32px;box-shadow:0 12px 32px rgba(0,0,0,.28),0 4px 12px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.06)}
+body.dark .nav-inner{background:rgba(10,10,12,.9);border-color:rgba(255,255,255,.04)}
+.nav-indicator{position:absolute;top:50%;left:0;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle,rgba(200,184,160,.22) 0%,rgba(200,184,160,.05) 60%,transparent 100%);transform:translate(0,-50%);transition:transform .35s cubic-bezier(.34,1.56,.64,1);pointer-events:none;z-index:0}
+.nav-indicator::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;background:rgba(200,184,160,.12);filter:blur(8px)}
+.nav-item{position:relative;z-index:1;flex:1;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .2s ease}
+.nav-item:active{transform:scale(.9)}
+.nav-emoji{font-size:22px;line-height:1;filter:grayscale(1) brightness(1.7) opacity(.55);transition:filter .25s ease,transform .25s ease;display:block}
+.nav-item.active .nav-emoji{filter:grayscale(0) brightness(1.1) opacity(1) drop-shadow(0 0 6px rgba(200,184,160,.5));transform:scale(1.12)}
+.nav-badge{position:absolute;top:10px;right:12px;background:var(--danger);color:#FFF;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:none;align-items:center;justify-content:center;padding:0 5px;z-index:3;box-shadow:0 2px 6px rgba(230,57,70,.5)}
+.nav-badge.show{display:flex}
+.success-screen{text-align:center;padding:120px 20px 40px}
+.success-icon{font-size:80px;margin-bottom:24px;display:block;line-height:1;animation:pop .5s}
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+.success-screen h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--primary);margin-bottom:12px}
+.success-screen p{font-size:15px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5}
+.success-bonus{display:inline-block;background:rgba(45,106,79,.12);color:var(--success);font-size:14px;font-weight:700;padding:10px 20px;border-radius:14px;margin-bottom:28px}
+.success-screen button{background:var(--primary);color:var(--surface);border:none;border-radius:14px;padding:16px 40px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit}
+body.dark .success-screen button{color:#121212}
+.no-results{grid-column:1/-1;text-align:center;padding:40px 20px}
+.no-results .icon{font-size:50px;margin-bottom:16px;display:block;line-height:1}
+.no-results h3{font-size:16px;font-weight:600;color:var(--primary);margin-bottom:6px}
+.order-card{background:var(--bg);border-radius:18px;padding:18px 20px;margin-bottom:12px}
+.order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.order-id{font-size:15px;font-weight:700;color:var(--primary)}
+.order-status{font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px}
+.order-status.delivered{background:rgba(45,106,79,.15);color:var(--success)}
+.order-status.shipping{background:rgba(244,162,97,.18);color:var(--warning)}
+.order-status.cancelled{background:rgba(230,57,70,.15);color:var(--danger)}
+.order-info{display:flex;justify-content:space-between;font-size:13px;color:var(--text-secondary);margin-bottom:14px}
+.order-footer{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border)}
+.order-total-label{font-size:12px;color:var(--text-secondary)}
+.order-total{font-size:17px;font-weight:700;color:var(--primary)}
+.notification-item{display:flex;gap:14px;background:var(--bg);border-radius:18px;padding:16px;margin-bottom:12px;position:relative}
+.notification-icon{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface);flex-shrink:0;line-height:1}
+body.dark .notification-icon{background:#1E1E1E}
+.notification-content{flex:1;min-width:0}
+.notification-title{font-size:14px;font-weight:600;color:var(--primary);margin-bottom:4px}
+.notification-text{font-size:13px;color:var(--text-secondary);line-height:1.4;margin-bottom:6px}
+.notification-date{font-size:12px;color:var(--text-secondary);opacity:.8}
+.notification-item.unread::before{content:'';position:absolute;top:22px;right:20px;width:8px;height:8px;background:var(--accent);border-radius:50%}
+.notification-item.unread .notification-title{font-weight:700}
+.address-card{background:var(--bg);border-radius:18px;padding:18px 20px;margin-bottom:12px;border:2px solid transparent}
+.address-card.default{border-color:var(--accent)}
+.address-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.address-card-icon{font-size:20px}
+.address-card-label{font-size:14px;font-weight:700;color:var(--primary)}
+.address-card-default-badge{background:var(--accent);color:#1A1A1A;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px}
+.address-card-text{font-size:14px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px}
+.address-card-actions{display:flex;gap:8px}
+.address-action-btn{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px;font-size:13px;font-weight:500;color:var(--primary);cursor:pointer;font-family:inherit}
+.address-action-btn.delete{color:var(--danger)}
+.add-new-btn{width:100%;background:var(--bg);color:var(--primary);border:2px dashed var(--border);border-radius:18px;padding:18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:16px}
+.pay-card{border-radius:20px;padding:22px;margin-bottom:14px;color:#FFF;position:relative;overflow:hidden;min-height:180px;box-shadow:0 15px 35px rgba(0,0,0,.15)}
+.pay-card::before{content:'';position:absolute;top:-40%;right:-20%;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.18) 0%,transparent 70%)}
+.pay-card.visa{background:linear-gradient(135deg,#1A1A2E 0%,#16213E 50%,#0F3460 100%)}
+.pay-card.mastercard{background:linear-gradient(135deg,#2B1055 0%,#7597DE 100%)}
+.pay-card.mir{background:linear-gradient(135deg,#2D6A4F 0%,#4ADE80 100%)}
+.pay-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;position:relative;z-index:2}
+.pay-card-brand{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;letter-spacing:1px}
+.pay-card-system{font-size:13px;font-weight:700;letter-spacing:2px;opacity:.85}
+.pay-card-number{font-family:'Courier New',monospace;font-size:19px;letter-spacing:3px;margin-bottom:20px;position:relative;z-index:2}
+.pay-card-bottom{display:flex;justify-content:space-between;align-items:flex-end;position:relative;z-index:2;gap:12px}
+.pay-card-label{font-size:10px;opacity:.6;letter-spacing:1.5px;margin-bottom:4px}
+.pay-card-value{font-size:13px;font-weight:600}
+.pay-card-default-badge{background:rgba(255,255,255,.25);font-size:10px;padding:4px 10px;border-radius:20px;font-weight:700;letter-spacing:.5px}
+.pay-card-actions{display:flex;gap:8px;margin-top:-8px;margin-bottom:16px;padding:0 8px}
+.lang-option{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:16px;padding:16px 20px;margin-bottom:10px;cursor:pointer;border:2px solid transparent}
+.lang-option.active{border-color:var(--accent);background:var(--surface)}
+.lang-flag{font-size:28px;line-height:1}
+.lang-info{flex:1}
+.lang-name{font-size:15px;font-weight:600;color:var(--primary);margin-bottom:2px}
+.lang-native{font-size:12px;color:var(--text-secondary)}
+.lang-check{width:26px;height:26px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent}
+.lang-option.active .lang-check{background:var(--accent);color:#FFF}
+.help-hero{background:linear-gradient(135deg,var(--primary),#3A3A3A);border-radius:22px;padding:28px 24px;color:#FFF;margin-bottom:22px;text-align:center}
+body.dark .help-hero{background:linear-gradient(135deg,#2A2A2A,#3A3A3A)}
+.help-hero-icon{font-size:50px;margin-bottom:12px}
+.help-hero-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:6px}
+.help-hero-subtitle{font-size:13px;color:rgba(255,255,255,.7);line-height:1.5}
+.help-contacts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+.help-contact{background:var(--bg);border-radius:16px;padding:16px 14px;text-align:center;cursor:pointer}
+.help-contact:hover{background:var(--surface)}
+.help-contact-icon{font-size:24px;margin-bottom:8px;display:block}
+.help-contact-title{font-size:13px;font-weight:600;color:var(--primary);margin-bottom:3px}
+.help-contact-sub{font-size:11px;color:var(--text-secondary)}
+.faq-title{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--primary);margin-bottom:14px}
+.faq-item{background:var(--bg);border-radius:16px;margin-bottom:10px;overflow:hidden}
+.faq-question{padding:16px 20px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.faq-question .arrow{font-size:14px;color:var(--text-secondary);transition:transform .3s}
+.faq-item.open .faq-question .arrow{transform:rotate(180deg)}
+.faq-answer{max-height:0;overflow:hidden;transition:max-height .3s ease;padding:0 20px;font-size:13px;line-height:1.6;color:var(--text-secondary)}
+.faq-item.open .faq-answer{max-height:400px;padding-bottom:16px}
+.chat-screen{position:absolute;inset:0;display:none;flex-direction:column;background:var(--surface);z-index:50;padding:0 !important;border-radius:40px;overflow:hidden}
+.chat-screen.active,.chat-screen.slide-in,.chat-screen.slide-back,.chat-screen.fade-in{display:flex}
+.chat-header{display:flex;align-items:center;gap:12px;padding:56px 16px 14px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;z-index:5}
+.chat-back{width:40px;height:40px;background:var(--bg);border:none;border-radius:50%;font-size:18px;color:var(--primary);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.chat-operator{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.chat-operator-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#4ADE80,#2D6A4F);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;position:relative}
+.chat-operator-avatar::after{content:'';position:absolute;bottom:0;right:0;width:11px;height:11px;background:#4ADE80;border:2px solid var(--surface);border-radius:50%}
+.chat-operator-info{flex:1;min-width:0}
+.chat-operator-name{font-size:15px;font-weight:700;color:var(--primary);margin-bottom:2px}
+.chat-operator-status{font-size:11px;color:var(--success);font-weight:500}
+.chat-status-info{text-align:center;padding:10px 16px;font-size:11px;color:var(--text-secondary);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.chat-messages{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:12px;scrollbar-width:none;background:var(--bg)}
+.chat-messages::-webkit-scrollbar{display:none}
+.chat-msg{display:flex;gap:8px;max-width:85%;animation:msgIn .25s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.chat-msg.operator{align-self:flex-start}
+.chat-msg.user{align-self:flex-end;flex-direction:row-reverse}
+.chat-bubble{padding:11px 15px;border-radius:18px;font-size:14px;line-height:1.4;word-wrap:break-word;max-width:100%}
+.chat-msg.operator .chat-bubble{background:var(--surface);color:var(--primary);border-bottom-left-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.chat-msg.user .chat-bubble{background:var(--primary);color:var(--surface);border-bottom-right-radius:4px}
+body.dark .chat-msg.user .chat-bubble{color:#121212}
+.chat-time{font-size:10px;color:var(--text-secondary);opacity:.7;align-self:flex-end;padding-bottom:4px}
+.chat-typing{display:flex;gap:4px;padding:14px 18px;background:var(--surface);border-radius:18px;border-bottom-left-radius:4px;width:fit-content;align-self:flex-start;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.chat-typing-dot{width:7px;height:7px;background:var(--text-secondary);border-radius:50%;animation:typing 1.4s infinite}
+.chat-typing-dot:nth-child(2){animation-delay:.2s}
+.chat-typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+.chat-quick-replies{padding:10px 16px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.chat-quick-replies::-webkit-scrollbar{display:none}
+.chat-quick-reply{flex-shrink:0;padding:8px 14px;background:var(--bg);border:1px solid var(--border);border-radius:18px;font-size:12px;font-weight:500;color:var(--primary);cursor:pointer;font-family:inherit;white-space:nowrap}
+.chat-quick-reply:hover{background:var(--accent);border-color:var(--accent);color:#FFF}
+.chat-input-bar{display:flex;gap:8px;align-items:flex-end;padding:12px 16px 20px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.chat-input{flex:1;min-height:44px;max-height:100px;background:var(--bg);border:2px solid transparent;border-radius:22px;padding:11px 18px;font-size:14px;color:var(--primary);font-family:inherit;outline:none;resize:none;line-height:1.3}
+.chat-input:focus{border-color:var(--accent)}
+.chat-input::placeholder{color:var(--text-secondary)}
+.chat-send-btn{width:44px;height:44px;background:var(--primary);color:var(--surface);border:none;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+body.dark .chat-send-btn{color:#121212}
+.chat-send-btn:disabled{opacity:.4;cursor:not-allowed}
+.select-picker{display:flex;align-items:center;gap:12px;background:var(--bg);border:2px solid transparent;border-radius:14px;padding:14px 18px;margin-bottom:10px;cursor:pointer;transition:border .2s}
+.select-picker.active{border-color:var(--primary)}
+.select-picker-icon{font-size:22px;flex-shrink:0}
+.select-picker-info{flex:1;min-width:0}
+.select-picker-title{font-size:14px;font-weight:600;color:var(--primary);margin-bottom:2px}
+.select-picker-sub{font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.select-picker-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;flex-shrink:0}
+.select-picker.active .select-picker-check{background:var(--primary);border-color:var(--primary);color:var(--surface)}
+body.dark .select-picker.active .select-picker-check{color:#121212}
+.select-add-btn{width:100%;background:var(--bg);color:var(--primary);border:2px dashed var(--border);border-radius:14px;padding:14px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:all .2s}
+.select-add-btn:hover{border-color:var(--accent);border-style:solid}
+.empty-checkout-hint{text-align:center;padding:20px;color:var(--text-secondary);font-size:13px;line-height:1.5}
+
+/* ⏱ ТАЙМЕР СКИДКИ */
+.banner-timer{color:var(--accent);font-size:12px;font-weight:600;margin-top:12px;font-family:'Courier New',monospace;letter-spacing:1px;opacity:.9}
+
+/* 🔔 ТОСТ-УВЕДОМЛЕНИЯ */
+.toast-container{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:calc(100% - 40px);max-width:340px}
+.toast{background:var(--primary);color:var(--surface);border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:toastIn .3s ease;pointer-events:auto}
+body.dark .toast{background:#2A2A2A;color:#F5F5F5}
+.toast-img{width:42px;height:42px;border-radius:10px;background-size:cover;background-position:center;background-color:var(--bg);flex-shrink:0}
+.toast-text{flex:1;font-size:13px;font-weight:500;line-height:1.3}
+.toast-text strong{font-weight:700}
+.toast-text .toast-sub{font-size:11px;opacity:.75;margin-top:2px}
+.toast.out{animation:toastOut .3s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(-10px) scale(.95)}}
+
+/* ❤️ ПУЛЬС СЕРДЕЧКА */
+.fav-btn.pulse{animation:heartPulse .5s ease}
+@keyframes heartPulse{0%{transform:scale(1)}40%{transform:scale(1.45)}70%{transform:scale(.9)}100%{transform:scale(1)}}
+
+/* ❤️ ЛЕТЯЩЕЕ СЕРДЕЧКО */
+.fly-heart{position:fixed;font-size:26px;pointer-events:none;z-index:9999;animation:flyUp 1s ease forwards;will-change:transform,opacity}
+@keyframes flyUp{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-160px) scale(1.6)}}
+
+/* 🎡 КОЛЕСО ФОРТУНЫ */
+.wheel-modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:150;display:none;align-items:center;justify-content:center;border-radius:40px;padding:20px}
+.wheel-modal-overlay.show{display:flex;animation:fadeIn .25s}
+.wheel-modal{width:100%;max-width:340px;background:var(--surface);border-radius:26px;padding:24px;text-align:center;position:relative}
+.wheel-modal-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--primary);margin-bottom:6px}
+.wheel-modal-subtitle{font-size:13px;color:var(--text-secondary);margin-bottom:20px;min-height:18px}
+.wheel-container{position:relative;width:230px;height:230px;margin:0 auto 20px;filter:drop-shadow(0 8px 24px rgba(0,0,0,.2))}
+.wheel-pointer{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:28px;color:#E63946;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+.wheel{width:230px;height:230px;border-radius:50%;position:relative;border:5px solid var(--primary);overflow:hidden;transition:transform 4s cubic-bezier(.17,.67,.28,1.05)}
+.wheel-svg{width:100%;height:100%;display:block;border-radius:50%}
+.wheel-center{position:absolute;top:50%;left:50%;width:46px;height:46px;background:var(--primary);border-radius:50%;transform:translate(-50%,-50%);z-index:5;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:20px;font-weight:700;box-shadow:0 0 0 4px var(--surface)}
+body.dark .wheel-center{background:#2A2A2A}
+.wheel-spin-btn{width:100%;background:var(--primary);color:var(--surface);border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:transform .2s}
+body.dark .wheel-spin-btn{color:#121212}
+.wheel-spin-btn:disabled{opacity:.5;cursor:not-allowed}
+.wheel-spin-btn:not(:disabled):active{transform:scale(.97)}
+.wheel-result{font-size:15px;font-weight:700;color:var(--success);min-height:22px;margin-bottom:12px}
+.wheel-prizes{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-bottom:14px;letter-spacing:.3px}
+.wheel-cancel-btn{background:none;border:none;color:var(--text-secondary);font-size:14px;cursor:pointer;font-family:inherit;padding:8px;width:100%}
+</style>
+</head>
+<body>
+<div id="debugBanner"></div>
+<div class="phone">
+    <div class="status-bar">
+        <span>9:41</span>
+        <div style="display:flex;gap:6px">📶 🔋</div>
+    </div>
+    <div class="phone-content">
+        <div class="screen active fade-in onboarding" id="onboarding">
+            <div class="onboarding-wrapper">
+                <div class="onboarding-slides">
+                    <div class="onboarding-slide active"><div class="onboarding-illustration">🛋️</div><h1 class="onboarding-title" data-i18n="ob1_title">Добро пожаловать в Funica</h1><p class="onboarding-text" data-i18n="ob1_text">Тысячи стильных товаров для вашего дома</p></div>
+                    <div class="onboarding-slide"><div class="onboarding-illustration">🚚</div><h1 class="onboarding-title" data-i18n="ob2_title">Быстрая доставка</h1><p class="onboarding-text" data-i18n="ob2_text">Доставим за 1-3 дня</p></div>
+                    <div class="onboarding-slide"><div class="onboarding-illustration">💎</div><h1 class="onboarding-title" data-i18n="ob3_title">Бонусы за покупки</h1><p class="onboarding-text" data-i18n="ob3_text">Копите и оплачивайте до 30%</p></div>
+                </div>
+                <div class="onboarding-footer">
+                    <div class="onboarding-dots"><div class="dot active" onclick="goToSlide(0)"></div><div class="dot" onclick="goToSlide(1)"></div><div class="dot" onclick="goToSlide(2)"></div></div>
+                    <button class="onboarding-btn" id="onboardingBtn" onclick="nextSlide()" data-i18n="next">Далее</button>
+                    <button class="onboarding-skip" onclick="finishOnboarding()" data-i18n="skip">Пропустить</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="screen" id="login">
+            <div class="auth-container">
+                <button class="auth-back" onclick="cancelAuth()" id="loginBackBtn" style="display:none">←</button>
+                <div class="auth-logo">🛋️</div>
+                <h1 class="auth-title" data-i18n="login_title">Вход в Funica</h1>
+                <p class="auth-subtitle" data-i18n="login_subtitle">Введите номер телефона для входа</p>
+                <div class="phone-input-wrapper">
+                    <span class="phone-prefix">+7</span>
+                    <input type="tel" id="phoneInput" class="phone-input" placeholder="(900) 123-45-67" maxlength="15" oninput="formatPhone(this)">
+                </div>
+                <button class="auth-btn" id="sendCodeBtn" onclick="sendCode()" disabled data-i18n="get_code">Получить код</button>
+                <p class="auth-note" data-i18n="login_note">Нажимая кнопку, вы соглашаетесь с условиями</p>
+                <p class="auth-guest-hint" id="guestContinue" style="display:none"><a onclick="cancelAuth()" data-i18n="continue_guest">Продолжить как гость</a></p>
+            </div>
+        </div>
+
+        <div class="screen" id="verify">
+            <div class="auth-container">
+                <button class="auth-back" onclick="showScreen('login')">←</button>
+                <h1 class="auth-title" data-i18n="verify_title">Введите код</h1>
+                <p class="auth-subtitle">Мы отправили SMS на <strong id="verifyPhone">+7</strong></p>
+                <div class="code-inputs">
+                    <input type="tel" maxlength="1" class="code-input" data-index="0" oninput="onCodeInput(this)">
+                    <input type="tel" maxlength="1" class="code-input" data-index="1" oninput="onCodeInput(this)">
+                    <input type="tel" maxlength="1" class="code-input" data-index="2" oninput="onCodeInput(this)">
+                    <input type="tel" maxlength="1" class="code-input" data-index="3" oninput="onCodeInput(this)">
+                </div>
+                <p class="code-hint"><span data-i18n="demo_code">Демо-код:</span> <strong>1234</strong></p>
+                <button class="auth-btn" onclick="verifyCode()" data-i18n="login">Войти</button>
+                <p class="resend-text"><span data-i18n="resend">Отправить повторно через</span> <span id="resendTimer">59</span> <span data-i18n="sec">сек</span></p>
+            </div>
+        </div>
+
+        <div class="screen" id="home">
+            <header class="header">
+                <div><p class="greeting-small" data-i18n="greeting">Добрый день</p><h1 class="greeting-name" id="greetingName">Гость</h1></div>
+                <div class="avatar guest" id="headerAvatar" onclick="showScreen('profile','fade');setNavActive(4)">👤</div>
+            </header>
+            <div class="guest-banner" id="guestBanner" onclick="goToLogin('home')">
+                <div class="guest-banner-icon">🎁</div>
+                <div class="guest-banner-text">
+                    <div class="guest-banner-title" data-i18n="guest_banner_title">Войдите в аккаунт</div>
+                    <div class="guest-banner-sub" data-i18n="guest_banner_sub">Получите 500 бонусов и сохраните корзину</div>
+                </div>
+            </div>
+            <div class="search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                <input type="text" id="searchInput" data-i18n-ph="search_ph" placeholder="Поиск мебели..." oninput="handleSearch(this.value)">
+                <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+            </div>
+            <div class="filters">
+                <button class="filter-chip active" onclick="setFilter('all',this)" data-i18n="f_all">Все</button>
+                <button class="filter-chip" onclick="setFilter('sofa',this)" data-i18n="f_sofa">Диваны</button>
+                <button class="filter-chip" onclick="setFilter('chair',this)" data-i18n="f_chair">Стулья</button>
+                <button class="filter-chip" onclick="setFilter('table',this)" data-i18n="f_table">Столы</button>
+                <button class="filter-chip" onclick="setFilter('light',this)" data-i18n="f_light">Свет</button>
+                <button class="filter-chip" onclick="setFilter('decor',this)" data-i18n="f_decor">Декор</button>
+            </div>
+            <div class="banner">
+                <div class="banner-text">
+                    <p class="banner-label" data-i18n="banner_label">СКИДКА 25%</p>
+                    <h2 class="banner-title" data-i18n="banner_title">Новая коллекция</h2>
+                    <button class="banner-btn" data-i18n="banner_btn">Смотреть</button>
+                    <p class="banner-timer" id="bannerTimer">02:45:18</p>
+                </div>
+                <img class="banner-img" src="images/sofa-soft.jpg" alt="Banner">
+            </div>
+            <div class="section-header"><h3 id="sectionTitle" data-i18n="popular">Популярное</h3><a onclick="openCatalog()" data-i18n="see_all">Все</a></div>
+            <div class="products" id="productsGrid"></div>
+        </div>
+
+        <div class="screen" id="catalog">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="catalog">Каталог</h1><span class="count-badge" id="catalogCount">0</span></div>
+            <div class="search">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                <input type="text" id="catalogSearchInput" data-i18n-ph="search_ph" placeholder="Поиск..." oninput="handleCatalogSearch(this.value)">
+            </div>
+            <div class="catalog-controls">
+                <button class="ctrl-btn active" onclick="openSortSheet()">↕ <span id="sortLabel" data-i18n="sort_popular">Популярные</span></button>
+                <button class="ctrl-btn" id="viewBtn" onclick="toggleViewMode()">⊞ <span id="viewLabel" data-i18n="view_grid">Сетка</span></button>
+            </div>
+            <div class="filters" id="catalogFilters">
+                <button class="filter-chip active" onclick="setCatalogFilter('all',this)" data-i18n="f_all">Все</button>
+                <button class="filter-chip" onclick="setCatalogFilter('sofa',this)" data-i18n="f_sofa">Диваны</button>
+                <button class="filter-chip" onclick="setCatalogFilter('chair',this)" data-i18n="f_chair">Стулья</button>
+                <button class="filter-chip" onclick="setCatalogFilter('table',this)" data-i18n="f_table">Столы</button>
+                <button class="filter-chip" onclick="setCatalogFilter('light',this)" data-i18n="f_light">Свет</button>
+                <button class="filter-chip" onclick="setCatalogFilter('decor',this)" data-i18n="f_decor">Декор</button>
+            </div>
+            <div class="products" id="catalogGrid"></div>
+        </div>
+
+        <div class="screen" id="product">
+            <div class="product-hero" id="productHero">
+                <button class="back-btn" onclick="goBack()">←</button>
+                <button class="fav-detail-btn" id="favDetailBtn" onclick="toggleFav(event,this)">♡</button>
+            </div>
+            <div class="product-info">
+                <h1 id="productName">—</h1>
+                <div class="product-rating" onclick="scrollToReviews()">
+                    <span class="stars" id="productStars">★★★★★</span>
+                    <span id="productRatingText">4.9 · 128</span>
+                </div>
+                <p class="product-detail-price" id="productPrice">—</p>
+                <p class="detail-section-title" data-i18n="color">Цвет</p>
+                <div class="color-options">
+                    <div class="color-option active" style="background:#E8E0D5" onclick="selectColor(this)"></div>
+                    <div class="color-option" style="background:#8A7A6A" onclick="selectColor(this)"></div>
+                    <div class="color-option" style="background:#1A1A1A" onclick="selectColor(this)"></div>
+                    <div class="color-option" style="background:#2D6A4F" onclick="selectColor(this)"></div>
+                </div>
+                <p class="detail-section-title" data-i18n="desc">Описание</p>
+                <p class="product-description" data-i18n="desc_text">Премиальное изделие с деревянным каркасом и мягкой обивкой.</p>
+                <div class="reviews-section" id="reviewsSection">
+                    <div class="reviews-header"><h3 data-i18n="reviews">Отзывы</h3></div>
+                    <div class="reviews-summary">
+                        <div class="reviews-avg">
+                            <div class="reviews-avg-value" id="avgRating">4.9</div>
+                            <div class="reviews-avg-stars" id="avgStars">★★★★★</div>
+                            <div class="reviews-avg-count" id="avgCount">128</div>
+                        </div>
+                        <div class="reviews-distribution" id="distribution"></div>
+                    </div>
+                    <button class="review-add-btn" onclick="openReviewModal()" data-i18n="write_review">✍️ Написать отзыв</button>
+                    <div id="reviewsList"></div>
+                </div>
+                <div class="product-bottom-bar">
+                    <button class="add-to-cart-btn" id="addToCartBtn" onclick="addCurrentToCart()" data-i18n="add_cart">В корзину</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="screen" id="bonus">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="bonus">Бонусы</h1></div>
+            <div class="bonus-card">
+                <div class="bonus-card-top"><div class="bonus-card-logo">Funica</div><div class="bonus-card-tier" id="bonusCardTier">Bronze</div></div>
+                <div class="bonus-card-label" data-i18n="bonus_avail">ДОСТУПНО БОНУСОВ</div>
+                <div class="bonus-card-value"><span id="bonusCardAmount">0</span><small>₽</small></div>
+                <div class="bonus-card-hint" data-i18n="bonus_hint">1 бонус = 1 ₽ скидки</div>
+                <div class="bonus-card-bottom">
+                    <div><div class="bonus-card-holder-label" data-i18n="holder">ВЛАДЕЛЕЦ</div><div class="bonus-card-holder" id="bonusCardHolder">GUEST</div></div>
+                    <div class="bonus-card-number">•••• 4567</div>
+                </div>
+            </div>
+            <div class="bonus-progress">
+                <div class="bonus-progress-header"><div class="bonus-progress-title" id="bonusProgressTitle" data-i18n="to_level">До уровня Silver</div><div class="bonus-progress-count" id="bonusProgressCount">0 / 1 000</div></div>
+                <div class="bonus-progress-bar"><div class="bonus-progress-fill" id="bonusProgressFill" style="width:0%"></div></div>
+                <div class="bonus-progress-hint" id="bonusProgressHint">—</div>
+            </div>
+            <div class="bonus-history-title" data-i18n="bonus_history">История бонусов</div>
+            <div id="bonusHistory"></div>
+        </div>
+
+        <div class="screen" id="favorites">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="favorites">Избранное</h1><span class="count-badge" id="favHeaderCount">0</span></div>
+            <div class="products" id="favoritesGrid"></div>
+        </div>
+
+        <div class="screen" id="orders">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="my_orders">Мои заказы</h1></div>
+            <div id="ordersContent"></div>
+        </div>
+
+        <div class="screen" id="notifications">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="notifications">Уведомления</h1></div>
+            <div id="notificationsContent"></div>
+        </div>
+
+        <div class="screen" id="addresses">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="addresses">Адреса доставки</h1></div>
+            <div id="addressesContent"></div>
+        </div>
+
+        <div class="screen" id="payments">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="payments">Способы оплаты</h1></div>
+            <div id="paymentsContent"></div>
+        </div>
+
+        <div class="screen" id="language">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="language">Язык</h1></div>
+            <div id="languageContent"></div>
+        </div>
+
+        <div class="screen" id="help">
+            <div class="screen-header"><button class="back-icon" onclick="goBack()">←</button><h1 data-i18n="help">Помощь</h1></div>
+            <div class="help-hero">
+                <div class="help-hero-icon">💬</div>
+                <div class="help-hero-title" data-i18n="help_title">Чем помочь?</div>
+                <div class="help-hero-subtitle" data-i18n="help_subtitle">Мы на связи 24/7. Отвечаем за 5 минут</div>
+            </div>
+            <div class="help-contacts">
+                <div class="help-contact" onclick="alert('8 800 555-35-35')"><span class="help-contact-icon">📞</span><div class="help-contact-title" data-i18n="call">Позвонить</div><div class="help-contact-sub">8 800 555-35-35</div></div>
+                <div class="help-contact" onclick="alert('help@funica.ru')"><span class="help-contact-icon">✉️</span><div class="help-contact-title" data-i18n="email">Email</div><div class="help-contact-sub">help@funica.ru</div></div>
+                <div class="help-contact" onclick="openChat()"><span class="help-contact-icon">💬</span><div class="help-contact-title" data-i18n="chat">Чат</div><div class="help-contact-sub" data-i18n="online">Онлайн · 24/7</div></div>
+                <div class="help-contact" onclick="alert('@funica_support')"><span class="help-contact-icon">📱</span><div class="help-contact-title">Telegram</div><div class="help-contact-sub">@funica_support</div></div>
+            </div>
+            <div class="faq-title" data-i18n="faq">Частые вопросы</div>
+            <div id="faqContent"></div>
+        </div>
+
+        <div class="screen" id="cart">
+            <h1 class="cart-title" data-i18n="cart">Корзина</h1>
+            <div id="cartContent"></div>
+        </div>
+
+        <div class="screen" id="checkout">
+            <h1 class="cart-title" style="margin-bottom:24px" data-i18n="checkout">Оформление</h1>
+            <div class="checkout-section">
+                <p class="checkout-section-title" data-i18n="delivery">Доставка</p>
+                <div id="checkoutAddresses"></div>
+            </div>
+            <div class="checkout-section">
+                <p class="checkout-section-title" data-i18n="payment">Способ оплаты</p>
+                <div id="checkoutCards"></div>
+            </div>
+            <div class="checkout-section">
+                <p class="checkout-section-title" data-i18n="bonus_program">Бонусная программа</p>
+                <div class="bonus-toggle" onclick="toggleUseBonuses()">
+                    <div class="bonus-toggle-text">
+                        <div class="bonus-toggle-title" data-i18n="use_bonuses">Использовать бонусы</div>
+                        <div class="bonus-toggle-subtitle" id="bonusToggleSubtitle">—</div>
+                    </div>
+                    <div class="switch" id="bonusSwitch"><div class="switch-knob"></div></div>
+                </div>
+            </div>
+            <div class="cart-summary">
+                <div class="summary-row"><span data-i18n="items">Товары</span> (<span id="checkoutCount">0</span>)<span id="checkoutSubtotal">0 ₽</span></div>
+                <div class="summary-row"><span data-i18n="delivery_row">Доставка</span><span data-i18n="free">Бесплатно</span></div>
+                <div class="summary-row promo-row" id="promoRow" style="display:none"><span id="promoRowLabel">Промокод</span><span id="promoDiscount">− 0 ₽</span></div>
+                <div class="summary-row bonus-row" id="bonusRow" style="display:none"><span data-i18n="bonus">Бонусами</span><span id="bonusDiscount">− 0 ₽</span></div>
+                <div class="summary-row total"><span data-i18n="total">Итого</span><span id="checkoutTotal">0 ₽</span></div>
+            </div>
+            <button class="checkout-btn" onclick="placeOrder()" data-i18n="confirm_order">Подтвердить заказ</button>
+        </div>
+
+        <div class="screen" id="success">
+            <div class="success-screen">
+                <span class="success-icon">✅</span>
+                <h2 data-i18n="success_title">Заказ оформлен!</h2>
+                <p data-i18n="success_text">Мы отправили детали заказа на ваш номер</p>
+                <div class="success-bonus" id="successBonus" style="display:none"></div>
+                <br>
+                <button onclick="finishOrder()" data-i18n="to_home">На главную</button>
+            </div>
+        </div>
+
+        <div class="screen" id="profile">
+            <div class="profile-header">
+                <div class="profile-avatar guest" id="profileAvatar">👤</div>
+                <h2 class="profile-name" id="profileName">Гость</h2>
+                <p class="profile-email" id="profilePhone" data-i18n="not_auth">не авторизован</p>
+            </div>
+            <div class="guest-cta" id="guestCta">
+                <div class="guest-cta-title" data-i18n="login_prompt_title">Войдите в Funica</div>
+                <div class="guest-cta-text" data-i18n="login_prompt_text">Получите 500 бонусов на первый заказ</div>
+                <button class="guest-cta-btn" onclick="goToLogin('profile')" data-i18n="login_or_reg">Войти или зарегистрироваться</button>
+            </div>
+            <div class="profile-stats">
+                <div class="stat-card" onclick="openOrders()"><div class="stat-value" id="ordersCount">0</div><div class="stat-label" data-i18n="orders_short">Заказа</div></div>
+                <div class="stat-card" onclick="openFavorites()"><div class="stat-value" id="favCount">0</div><div class="stat-label" data-i18n="fav_short">Избранных</div></div>
+                <div class="stat-card" onclick="openBonus()"><div class="stat-value" id="bonusStatValue">0</div><div class="stat-label" data-i18n="bonus_short">Бонусов</div></div>
+            </div>
+            <div class="menu-list">
+                <div class="menu-item" onclick="openOrders()"><span class="icon">📦</span><span class="label" data-i18n="my_orders">Мои заказы</span><span class="arrow">→</span></div>
+                <div class="menu-item" onclick="openFavorites()"><span class="icon">❤️</span><span class="label" data-i18n="favorites">Избранное</span><span class="arrow">→</span></div>
+                <div class="menu-item" onclick="openBonus()"><span class="icon">💎</span><span class="label" data-i18n="bonus_card">Бонусная карта</span><span class="arrow">→</span></div>
+                <div class="menu-item" onclick="openAddresses()"><span class="icon">📍</span><span class="label" data-i18n="addresses">Адреса доставки</span><span class="value" id="addressesCount">0</span><span class="arrow">→</span></div>
+                <div class="menu-item" onclick="openPayments()"><span class="icon">💳</span><span class="label" data-i18n="payments">Способы оплаты</span><span class="value" id="paymentsCount">0</span><span class="arrow">→</span></div>
+            </div>
+            <div class="menu-list">
+                <div class="menu-item" onclick="openNotifications()"><span class="icon">🔔</span><span class="label" data-i18n="notifications">Уведомления</span><span class="arrow">→</span></div>
+                <div class="menu-item" onclick="toggleTheme()"><span class="icon" id="themeIcon">🌙</span><span class="label" data-i18n="dark_theme">Тёмная тема</span><div class="switch" id="themeSwitch"><div class="switch-knob"></div></div></div>
+                <div class="menu-item" onclick="openLanguage()"><span class="icon">🌐</span><span class="label" data-i18n="language">Язык</span><span class="value" id="languageValue">Русский</span><span class="arrow">→</span></div>
+                <div class="menu-item" onclick="openHelp()"><span class="icon">❓</span><span class="label" data-i18n="help">Помощь</span><span class="arrow">→</span></div>
+            </div>
+            <div class="menu-list">
+                <div class="menu-item" onclick="openWheel()"><span class="icon">🎡</span><span class="label">Колесо фортуны</span><span class="arrow">→</span></div>
+                <div class="menu-item" onclick="showOnboarding()"><span class="icon">🎬</span><span class="label" data-i18n="show_onboarding">Показать онбординг</span><span class="arrow">→</span></div>
+                <div class="menu-item danger" id="logoutBtn" onclick="logout()" style="display:none"><span class="icon">🚪</span><span class="label" data-i18n="logout">Выйти из аккаунта</span></div>
+                <div class="menu-item danger" onclick="clearAllData()"><span class="icon">🗑</span><span class="label" data-i18n="clear_data">Очистить все данные</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="screen chat-screen" id="chat">
+        <div class="chat-header">
+            <button class="chat-back" onclick="closeChat()">←</button>
+            <div class="chat-operator">
+                <div class="chat-operator-avatar">👩‍💼</div>
+                <div class="chat-operator-info">
+                    <div class="chat-operator-name" data-i18n="operator">Мария</div>
+                    <div class="chat-operator-status" data-i18n="operator_status">Онлайн · отвечает быстро</div>
+                </div>
+            </div>
+        </div>
+        <div class="chat-status-info" data-i18n="chat_protected">🔒 Ваши сообщения защищены</div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-quick-replies" id="chatQuickReplies"></div>
+        <div class="chat-input-bar">
+            <textarea class="chat-input" id="chatInput" data-i18n-ph="chat_ph" placeholder="Напишите сообщение..." rows="1" oninput="onChatInput()" onkeypress="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendChatMessage()}"></textarea>
+            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()" disabled>➤</button>
+        </div>
+    </div>
+
+    <div class="wheel-modal-overlay" id="wheelModalOverlay" onclick="closeWheelModalOnBg(event)">
+        <div class="wheel-modal">
+            <div class="wheel-modal-title">🎡 Колесо фортуны</div>
+            <div class="wheel-modal-subtitle" id="wheelSubtitle">Крутите раз в день и получайте бонусы!</div>
+            <div class="wheel-container">
+                <div class="wheel-pointer">▼</div>
+                <div class="wheel" id="wheel"></div>
+                <div class="wheel-center">₽</div>
+            </div>
+            <button class="wheel-spin-btn" id="wheelSpinBtn" onclick="spinWheel()">Крутить!</button>
+            <div class="wheel-result" id="wheelResult"></div>
+            <div class="wheel-prizes">Призы: 50 · 75 · 100 · 150 · 200 · 250 · 300 · 500 ₽</div>
+            <button class="wheel-cancel-btn" onclick="closeWheelModal()">Закрыть</button>
+        </div>
+    </div>
+
+    <div class="review-modal-overlay" id="reviewModalOverlay" onclick="closeReviewModalOnBg(event)">
+        <div class="review-modal">
+            <div class="review-modal-handle"></div>
+            <div class="review-modal-title" data-i18n="review_title">Оставить отзыв</div>
+            <div class="review-modal-subtitle" id="reviewProductName">—</div>
+            <div class="star-selector">
+                <button class="star-selector-btn" data-star="1" onclick="selectStar(1)">★</button>
+                <button class="star-selector-btn" data-star="2" onclick="selectStar(2)">★</button>
+                <button class="star-selector-btn" data-star="3" onclick="selectStar(3)">★</button>
+                <button class="star-selector-btn" data-star="4" onclick="selectStar(4)">★</button>
+                <button class="star-selector-btn" data-star="5" onclick="selectStar(5)">★</button>
+            </div>
+            <textarea class="review-textarea" id="reviewText" data-i18n-ph="review_ph" placeholder="Поделитесь впечатлениями..." maxlength="500"></textarea>
+            <button class="review-submit-btn" id="reviewSubmitBtn" onclick="submitReview()" disabled data-i18n="send_review">Отправить отзыв</button>
+            <button class="review-cancel-btn" onclick="closeReviewModal()" data-i18n="cancel">Отмена</button>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <nav class="bottom-nav hidden" id="bottomNav">
+        <div class="nav-inner">
+            <div class="nav-indicator" id="navIndicator"></div>
+            <div class="nav-item active" data-idx="0" onclick="showScreen('home','fade');setNavActive(0)"><span class="nav-emoji">🏠</span></div>
+            <div class="nav-item" data-idx="1" onclick="openCatalog();setNavActive(1)"><span class="nav-emoji">🔍</span></div>
+            <div class="nav-item" data-idx="2" onclick="showScreen('cart','fade');setNavActive(2)"><span class="nav-emoji">🛒</span><span class="nav-badge" id="cartBadge">0</span></div>
+            <div class="nav-item" data-idx="3" onclick="openFavorites();setNavActive(3)"><span class="nav-emoji">❤️</span></div>
+            <div class="nav-item" data-idx="4" onclick="showScreen('profile','fade');setNavActive(4)"><span class="nav-emoji">👤</span></div>
+        </div>
+    </nav>
+</div>
+
+<script>
+var I18N = {
+    ru:{ob1_title:'Добро пожаловать в Funica',ob1_text:'Тысячи стильных товаров для вашего дома',ob2_title:'Быстрая доставка',ob2_text:'Доставим за 1-3 дня',ob3_title:'Бонусы за покупки',ob3_text:'Копите и оплачивайте до 30%',next:'Далее',skip:'Пропустить',start:'Начать покупки',login_title:'Вход в Funica',login_subtitle:'Введите номер телефона для входа',get_code:'Получить код',login_note:'Нажимая кнопку, вы соглашаетесь с условиями',continue_guest:'Продолжить как гость',verify_title:'Введите код',demo_code:'Демо-код:',login:'Войти',resend:'Отправить повторно через',sec:'сек',greeting:'Добрый день',guest:'Гость',user:'Друг',guest_banner_title:'Войдите в аккаунт',guest_banner_sub:'Получите 500 бонусов и сохраните корзину',search_ph:'Поиск мебели...',f_all:'Все',f_sofa:'Диваны',f_chair:'Стулья',f_table:'Столы',f_light:'Свет',f_decor:'Декор',banner_label:'СКИДКА 25%',banner_title:'Новая коллекция',banner_btn:'Смотреть',popular:'Популярное',see_all:'Все',found:'Найдено',catalog:'Каталог',sort_popular:'Популярные',sort_price_asc:'Цена ↑',sort_price_desc:'Цена ↓',sort_new:'Новинки',view_grid:'Сетка',view_list:'Список',color:'Цвет',desc:'Описание',desc_text:'Премиальное изделие с деревянным каркасом и мягкой обивкой.',reviews:'Отзывы',write_review:'✍️ Написать отзыв',add_cart:'В корзину',review_title:'Оставить отзыв',review_ph:'Поделитесь впечатлениями...',send_review:'Отправить отзыв',cancel:'Отмена',bonus:'Бонусы',bonus_avail:'ДОСТУПНО БОНУСОВ',bonus_hint:'1 бонус = 1 ₽ скидки',holder:'ВЛАДЕЛЕЦ',to_level:'До уровня',bonus_history:'История бонусов',favorites:'Избранное',my_orders:'Мои заказы',notifications:'Уведомления',addresses:'Адреса доставки',payments:'Способы оплаты',language:'Язык',help:'Помощь',help_title:'Чем помочь?',help_subtitle:'Мы на связи 24/7',call:'Позвонить',email:'Email',chat:'Чат',online:'Онлайн · 24/7',faq:'Частые вопросы',cart:'Корзина',checkout:'Оформление',delivery:'Доставка',payment:'Способ оплаты',pay_card:'Банковская карта',pay_cash:'Наличными курьеру',bonus_program:'Бонусная программа',use_bonuses:'Использовать бонусы',items:'Товары',delivery_row:'Доставка',free:'Бесплатно',total:'Итого',confirm_order:'Подтвердить заказ',success_title:'Заказ оформлен!',success_text:'Мы отправили детали заказа на ваш номер',to_home:'На главную',not_auth:'не авторизован',login_prompt_title:'Войдите в Funica',login_prompt_text:'Получите 500 бонусов на первый заказ',login_or_reg:'Войти или зарегистрироваться',orders_short:'Заказа',fav_short:'Избранных',bonus_short:'Бонусов',bonus_card:'Бонусная карта',dark_theme:'Тёмная тема',show_onboarding:'Показать онбординг',logout:'Выйти из аккаунта',clear_data:'Очистить все данные',operator:'Мария',operator_status:'Онлайн · отвечает быстро',chat_protected:'🔒 Ваши сообщения защищены',chat_ph:'Напишите сообщение...',cart_empty:'Корзина пуста',cart_empty_text:'Добавьте товары для оформления',go_catalog:'В каталог',orders_empty:'Заказов пока нет',orders_empty_guest:'Войдите, чтобы увидеть заказы',orders_empty_text:'Оформите первый заказ',enter:'Войти',in_stock:'В пути',delivered:'Доставлен',cancelled:'Отменён',notifications_empty:'Уведомлений нет',notifications_empty_text:'Здесь появятся статусы и акции',promo_ph:'Введите промокод',apply:'Применить',add_address:'+ Добавить адрес',main:'ОСНОВНОЙ',make_default:'Сделать основным',delete:'Удалить',add_card:'+ Добавить карту',card_holder:'ВЛАДЕЛЕЦ',card_expiry:'СРОК',card_main:'ОСНОВНАЯ',no_address:'Нет адресов',no_address_hint:'Добавьте адрес доставки',no_card:'Нет карт',no_card_hint:'Добавьте способ оплаты',login_to_review:'Войдите, чтобы оставить отзыв',login_now:'Войти сейчас?'},
+    en:{ob1_title:'Welcome to Funica',ob1_text:'Thousands of stylish home items',ob2_title:'Fast Delivery',ob2_text:'Delivered in 1-3 days',ob3_title:'Bonuses for Purchases',ob3_text:'Earn and pay up to 30%',next:'Next',skip:'Skip',start:'Start Shopping',login_title:'Sign in to Funica',login_subtitle:'Enter your phone number',get_code:'Get Code',login_note:'By clicking you agree to terms',continue_guest:'Continue as guest',verify_title:'Enter Code',demo_code:'Demo code:',login:'Sign In',resend:'Resend in',sec:'sec',greeting:'Good afternoon',guest:'Guest',user:'User',guest_banner_title:'Sign in',guest_banner_sub:'Get 500 bonuses and save your cart',search_ph:'Search...',f_all:'All',f_sofa:'Sofas',f_chair:'Chairs',f_table:'Tables',f_light:'Lighting',f_decor:'Decor',banner_label:'DISCOUNT 25%',banner_title:'New Collection',banner_btn:'Browse',popular:'Popular',see_all:'All',found:'Found',catalog:'Catalog',sort_popular:'Popular',sort_price_asc:'Price ↑',sort_price_desc:'Price ↓',sort_new:'New',view_grid:'Grid',view_list:'List',color:'Color',desc:'Description',desc_text:'Premium item with wooden frame and soft upholstery.',reviews:'Reviews',write_review:'✍️ Write a review',add_cart:'Add to Cart',review_title:'Write Review',review_ph:'Share your experience...',send_review:'Send',cancel:'Cancel',bonus:'Bonuses',bonus_avail:'AVAILABLE BONUSES',bonus_hint:'1 bonus = 1 ₽ off',holder:'CARDHOLDER',to_level:'To level',bonus_history:'Bonus History',favorites:'Favorites',my_orders:'My Orders',notifications:'Notifications',addresses:'Delivery Addresses',payments:'Payment Methods',language:'Language',help:'Help',help_title:'How can we help?',help_subtitle:'Online 24/7',call:'Call',email:'Email',chat:'Chat',online:'Online · 24/7',faq:'FAQ',cart:'Cart',checkout:'Checkout',delivery:'Delivery',payment:'Payment Method',pay_card:'Bank Card',pay_cash:'Cash on Delivery',bonus_program:'Bonus Program',use_bonuses:'Use bonuses',items:'Items',delivery_row:'Delivery',free:'Free',total:'Total',confirm_order:'Confirm Order',success_title:'Order placed!',success_text:'We sent order details to your phone',to_home:'Home',not_auth:'not authorized',login_prompt_title:'Sign in to Funica',login_prompt_text:'Get 500 bonuses on first order',login_or_reg:'Sign in or Register',orders_short:'Orders',fav_short:'Favorites',bonus_short:'Bonuses',bonus_card:'Bonus Card',dark_theme:'Dark Theme',show_onboarding:'Show Onboarding',logout:'Sign Out',clear_data:'Clear All Data',operator:'Maria',operator_status:'Online · replies fast',chat_protected:'🔒 Protected',chat_ph:'Type a message...',cart_empty:'Cart is empty',cart_empty_text:'Add items to checkout',go_catalog:'Go to Catalog',orders_empty:'No orders yet',orders_empty_guest:'Sign in to see orders',orders_empty_text:'Place your first order',enter:'Sign In',in_stock:'Shipping',delivered:'Delivered',cancelled:'Cancelled',notifications_empty:'No notifications',notifications_empty_text:'Order statuses will appear here',promo_ph:'Enter promo code',apply:'Apply',add_address:'+ Add address',main:'MAIN',make_default:'Make default',delete:'Delete',add_card:'+ Add card',card_holder:'CARDHOLDER',card_expiry:'EXPIRY',card_main:'MAIN',no_address:'No addresses',no_address_hint:'Add delivery address',no_card:'No cards',no_card_hint:'Add payment method',login_to_review:'Sign in to write a review',login_now:'Sign in now?'},
+    kz:{ob1_title:'Funica-ға қош келдіңіз',ob1_text:'Үйіңізге тауарлар',ob2_title:'Жылдам жеткізу',ob2_text:'1-3 күнде',ob3_title:'Бонустар',ob3_text:'30% дейін',next:'Келесі',skip:'Өткізу',start:'Сатып алуды бастау',login_title:'Funica-ға кіру',login_subtitle:'Телефон нөмірін енгізіңіз',get_code:'Код алу',login_note:'Шарттармен келісесіз',continue_guest:'Қонақ ретінде',verify_title:'Кодты енгізіңіз',demo_code:'Демо-код:',login:'Кіру',resend:'Қайта жіберу',sec:'сек',greeting:'Қайырлы күн',guest:'Қонақ',user:'Дос',guest_banner_title:'Аккаунтқа кіріңіз',guest_banner_sub:'500 бонус алыңыз',search_ph:'Іздеу...',f_all:'Барлығы',f_sofa:'Дивандар',f_chair:'Орындықтар',f_table:'Үстелдер',f_light:'Жарық',f_decor:'Декор',banner_label:'ЖЕҢІЛДІК 25%',banner_title:'Жаңа коллекция',banner_btn:'Қарау',popular:'Танымал',see_all:'Барлығы',found:'Табылды',catalog:'Каталог',sort_popular:'Танымал',sort_price_asc:'Баға ↑',sort_price_desc:'Баға ↓',sort_new:'Жаңа',view_grid:'Тор',view_list:'Тізім',color:'Түс',desc:'Сипаттама',desc_text:'Премиум бұйым.',reviews:'Пікірлер',write_review:'✍️ Пікір жазу',add_cart:'Себетке',review_title:'Пікір қалдыру',review_ph:'Бөлісіңіз...',send_review:'Жіберу',cancel:'Болдырмау',bonus:'Бонустар',bonus_avail:'БОНУСТАР',bonus_hint:'1 бонус = 1 ₽',holder:'ИЕСІ',to_level:'Деңгейге',bonus_history:'Бонус тарихы',favorites:'Таңдаулылар',my_orders:'Тапсырыстарым',notifications:'Хабарламалар',addresses:'Мекенжайлар',payments:'Төлем әдістері',language:'Тіл',help:'Көмек',help_title:'Қалай көмектесеміз?',help_subtitle:'24/7 онлайн',call:'Қоңырау',email:'Email',chat:'Чат',online:'Онлайн · 24/7',faq:'Жиі сұрақтар',cart:'Себет',checkout:'Рәсімдеу',delivery:'Жеткізу',payment:'Төлем',pay_card:'Банк картасы',pay_cash:'Қолма-қол',bonus_program:'Бонус бағдарламасы',use_bonuses:'Бонустарды қолдану',items:'Тауарлар',delivery_row:'Жеткізу',free:'Тегін',total:'Барлығы',confirm_order:'Растау',success_title:'Тапсырыс рәсімделді!',success_text:'Мәліметтер жіберілді',to_home:'Басты бетке',not_auth:'авторизацияланбаған',login_prompt_title:'Funica-ға кіріңіз',login_prompt_text:'500 бонус алыңыз',login_or_reg:'Кіру немесе тіркелу',orders_short:'Тапсырыс',fav_short:'Таңдаулы',bonus_short:'Бонус',bonus_card:'Бонус карта',dark_theme:'Қараңғы тақырып',show_onboarding:'Онбордингті көрсету',logout:'Шығу',clear_data:'Деректерді тазалау',operator:'Мария',operator_status:'Онлайн · жылдам',chat_protected:'🔒 Қорғалған',chat_ph:'Хабарлама жазыңыз...',cart_empty:'Себет бос',cart_empty_text:'Тауарлар қосыңыз',go_catalog:'Каталогқа',orders_empty:'Тапсырыс жоқ',orders_empty_guest:'Кіріңіз',orders_empty_text:'Бірінші тапсырысты рәсімдеңіз',enter:'Кіру',in_stock:'Жолда',delivered:'Жеткізілді',cancelled:'Бас тартылды',notifications_empty:'Хабарлама жоқ',notifications_empty_text:'Осында пайда болады',promo_ph:'Промокод',apply:'Қолдану',add_address:'+ Мекенжай',main:'НЕГІЗГІ',make_default:'Негізгі ету',delete:'Жою',add_card:'+ Карта',card_holder:'ИЕСІ',card_expiry:'МЕРЗІМІ',card_main:'НЕГІЗГІ',no_address:'Мекенжай жоқ',no_address_hint:'Мекенжай қосыңыз',no_card:'Карта жоқ',no_card_hint:'Төлем қосыңыз',login_to_review:'Пікір жазу үшін кіріңіз',login_now:'Қазір кіру?'}
+};
+function t(k){return (I18N[currentLanguage]&&I18N[currentLanguage][k])||I18N.ru[k]||k}
+
+var products = [
+    {id:1,name:'Кресло Nordic',price:12500,category:'chair',img:'images/chair-nordic.jpg',popularity:95},
+    {id:2,name:'Стол Loft',price:24900,category:'table',img:'images/table-loft.jpg',popularity:88},
+    {id:3,name:'Стул Oslo',price:8900,category:'chair',img:'images/chair-oslo.jpg',popularity:92},
+    {id:4,name:'Диван Soft',price:45000,category:'sofa',img:'images/sofa-soft.jpg',popularity:98},
+    {id:5,name:'Лампа Glow',price:5400,category:'light',img:'images/lamp-glow.jpg',popularity:76},
+    {id:6,name:'Столик Oak',price:18700,category:'table',img:'images/table-oak.jpg',popularity:81},
+    {id:7,name:'Диван Loft',price:38900,category:'sofa',img:'images/sofa-loft.jpg',popularity:90},
+    {id:8,name:'Кресло Velvet',price:15600,category:'chair',img:'images/chair-velvet.jpg',popularity:85},
+    {id:9,name:'Бонсай Pine',price:3200,category:'decor',img:'images/bonsai-pine.jpg',popularity:70},
+    {id:10,name:'Торшер Beam',price:9800,category:'light',img:'images/torch-beam.jpg',popularity:78}
+];
+var defaultReviews = {
+    1:[{author:'Мария К.',rating:5,text:'Отличное кресло!',date:'12 октября'},{author:'Дмитрий С.',rating:5,text:'Жене понравилось',date:'5 октября'},{author:'Анна П.',rating:4,text:'Хорошее',date:'28 сентября'}],
+    2:[{author:'Елена М.',rating:5,text:'Шикарный',date:'10 октября'},{author:'Павел Д.',rating:4,text:'Качественный',date:'2 октября'}],
+    3:[{author:'Сергей Л.',rating:5,text:'Лёгкий',date:'8 октября'}],
+    4:[{author:'Андрей К.',rating:5,text:'Мягкий',date:'14 октября'},{author:'Наталья Б.',rating:5,text:'Мечта',date:'7 октября'}],
+    5:[{author:'Ксения В.',rating:5,text:'Уютно',date:'11 октября'}],
+    6:[{author:'Юля С.',rating:5,text:'Стильный',date:'9 октября'}],
+    7:[{author:'Алина Ф.',rating:5,text:'Второй диван',date:'13 октября'}],
+    8:[{author:'Марина Д.',rating:5,text:'Бархат!',date:'16 октября'}],
+    9:[{author:'Света Р.',rating:4,text:'Красивый',date:'6 октября'}],
+    10:[{author:'Артём К.',rating:5,text:'Отличный',date:'12 октября'}]
+};
+var AVATAR_COLORS = ['#C8B8A0','#8A7A6A','#2D6A4F','#E63946','#F4A261','#6F4E37','#3D5AFE','#7B68EE'];
+function getAvatarColor(n){var s=0;for(var i=0;i<n.length;i++)s+=n.charCodeAt(i);return AVATAR_COLORS[s%AVATAR_COLORS.length]}
+var userReviews = {};
+var userAddresses = [];
+var userCards = [];
+var LANGUAGES = [
+    {code:'ru',flag:'🇷🇺',name:'Русский',native:'Russian'},
+    {code:'en',flag:'🇬🇧',name:'English',native:'English'},
+    {code:'kz',flag:'🇰🇿',name:'Қазақша',native:'Kazakh'}
+];
+var FAQ = [
+    {q:'Как оформить заказ?',a:'Добавьте товары в корзину, нажмите «Оформить заказ», укажите адрес и оплату.'},
+    {q:'Сколько идёт доставка?',a:'По Москве — 1-2 дня. По России — 3-7 дней.'},
+    {q:'Как вернуть товар?',a:'В течение 14 дней после получения.'},
+    {q:'Как работают бонусы?',a:'5% кэшбэка. 1 бонус = 1 ₽.'},
+    {q:'Как связаться с поддержкой?',a:'8 800 555-35-35 или чат.'}
+];
+var demoBonusHistory = [];
+var PROMOCODES = {'FUNICA10':{type:'percent',value:10,description:'−10%'},'WELCOME':{type:'fixed',value:500,description:'−500 ₽'},'SUMMER25':{type:'percent',value:25,max:5000,description:'−25% (макс 5000)'}};
+var BONUS_LEVELS = [{name:'Bronze',min:0,max:1000},{name:'Silver',min:1000,max:3000},{name:'Gold',min:3000,max:7000},{name:'Platinum',min:7000,max:999999}];
+
+var cart = [], favorites = [], userOrders = [], userNotifications = [];
+var currentProduct = null, previousScreen = 'home';
+var currentFilter = 'all', currentSearch = '', catalogFilter = 'all', catalogSearch = '', catalogSort = 'popular', catalogView = 'grid';
+var currentSlide = 0, totalSlides = 3;
+var userBonuses = 0, useBonuses = false, bonusDiscount = 0;
+var appliedPromo = null, promoDiscount = 0;
+var newReviewRating = 0, currentLanguage = 'ru', pendingAction = null, isGuest = true;
+var chatMessages = [], chatAwaitingReply = false;
+var checkoutSelectedAddressId = null, checkoutSelectedCardId = null;
+
+function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function safeRemove(k){try{localStorage.removeItem(k)}catch(e){}}
+function safeClear(){try{localStorage.clear()}catch(e){}}
+function getCurrentUser(){return safeGet('funica-current-user')}
+function isLoggedIn(){return !!getCurrentUser()}
+
+function applyLanguage() {
+    document.querySelectorAll('[data-i18n]').forEach(function(el){var x=t(el.getAttribute('data-i18n'));if(x)el.textContent=x});
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el){var x=t(el.getAttribute('data-i18n-ph'));if(x)el.placeholder=x});
+    var lv = document.getElementById('languageValue');
+    if (lv) { var l = LANGUAGES.find(function(x){return x.code===currentLanguage}); if (l) lv.textContent = l.name; }
+    updateUserUI();
+    renderProducts(); renderCatalog(); renderFavorites(); renderCart(); renderBonusCard(); renderBonusHistory();
+    renderFaq(); renderLanguage(); renderNotifications(); renderOrders(); renderAddresses(); renderPayments();
+}
+
+function addNotification(icon, titleKey, textKey, params) {
+    userNotifications.unshift({id:Date.now()+Math.random(),icon:icon,titleKey:titleKey,textKey:textKey,params:params||null,date:new Date().toISOString(),unread:true});
+}
+
+function formatNotifDate(iso) {
+    var d = new Date(iso), now = new Date(), diff = (now-d)/1000;
+    if (diff < 60) return currentLanguage==='en'?'Just now':(currentLanguage==='kz'?'Жаңа ғана':'Только что');
+    if (diff < 3600) return Math.floor(diff/60)+(currentLanguage==='en'?' min':(currentLanguage==='kz'?' мин':' мин'));
+    if (diff < 86400) return Math.floor(diff/3600)+(currentLanguage==='en'?' h':(currentLanguage==='kz'?' сағ':' ч'));
+    return Math.floor(diff/86400)+(currentLanguage==='en'?' d':(currentLanguage==='kz'?' күн':' дн'));
+}
+
+function renderNotifications() {
+    var c = document.getElementById('notificationsContent');
+    if (!c) return;
+    if (userNotifications.length === 0) {
+        c.innerHTML = '<div class="empty-state"><span class="icon">🔔</span><h2>'+t('notifications_empty')+'</h2><p>'+t('notifications_empty_text')+'</p></div>';
+        return;
+    }
+    var h = '';
+    for (var i = 0; i < userNotifications.length; i++) {
+        var n = userNotifications[i];
+        var title = n.titleKey, text = n.textKey;
+        if (n.titleKey === 'notif_welcome_title') title = currentLanguage==='en'?'Welcome!':(currentLanguage==='kz'?'Қош келдіңіз!':'Добро пожаловать!');
+        else if (n.titleKey === 'notif_order_title') title = (currentLanguage==='en'?'Order ':currentLanguage==='kz'?'Тапсырыс ':'Заказ ')+(n.params||'').split('|')[0];
+        else if (n.titleKey === 'notif_bonus_title') title = currentLanguage==='en'?'Bonus credited':(currentLanguage==='kz'?'Бонус есептелді':'Бонусы начислены');
+        if (n.textKey === 'notif_welcome_text') text = currentLanguage==='en'?'500 bonuses credited':(currentLanguage==='kz'?'500 бонус есептелді':'Начислено 500 бонусов');
+        else if (n.textKey === 'notif_order_text') text = (currentLanguage==='en'?'Total: ':currentLanguage==='kz'?'Сомасы: ':'Сумма: ')+((n.params||'').split('|')[1]||'')+' ₽';
+        else if (n.textKey === 'notif_bonus_text') text = '+ '+n.params+' '+(currentLanguage==='en'?'bonuses':currentLanguage==='kz'?'бонус':'бонусов');
+        h += '<div class="notification-item'+(n.unread?' unread':'')+'"><div class="notification-icon">'+n.icon+'</div>';
+        h += '<div class="notification-content"><div class="notification-title">'+title+'</div>';
+        h += '<div class="notification-text">'+text+'</div>';
+        h += '<div class="notification-date">'+formatNotifDate(n.date)+'</div></div></div>';
+    }
+    c.innerHTML = h;
+}
+
+function openNotifications() {
+    userNotifications.forEach(function(n){n.unread=false});
+    if (isLoggedIn()) saveState();
+    renderNotifications();
+    setNavActive(4);
+    showScreen('notifications','slide-in');
+}
+
+function renderOrders() {
+    var c = document.getElementById('ordersContent');
+    if (!c) return;
+    var oe = document.getElementById('ordersCount');
+    if (oe) oe.textContent = userOrders.length;
+    if (isGuest || userOrders.length === 0) {
+        c.innerHTML = '<div class="empty-state"><span class="icon">📦</span><h2>'+t('orders_empty')+'</h2><p>'+(isGuest?t('orders_empty_guest'):t('orders_empty_text'))+'</p><button onclick="'+(isGuest?"goToLogin('orders')":"showScreen('home','fade');setNavActive(0)")+'">'+(isGuest?t('enter'):t('go_catalog'))+'</button></div>';
+        return;
+    }
+    var h = '';
+    for (var i = 0; i < userOrders.length; i++) {
+        var o = userOrders[i];
+        var st = t(o.status==='shipping'?'in_stock':(o.status==='delivered'?'delivered':'cancelled'));
+        h += '<div class="order-card"><div class="order-header"><span class="order-id">'+o.id+'</span><span class="order-status '+o.status+'">'+st+'</span></div>';
+        h += '<div class="order-info"><span>'+o.date+'</span><span>'+o.items+' '+(currentLanguage==='en'?'items':currentLanguage==='kz'?'тауар':'тов.')+'</span></div>';
+        h += '<div class="order-footer"><span class="order-total-label">'+t('total')+'</span><span class="order-total">'+formatPrice(o.total)+'</span></div></div>';
+    }
+    c.innerHTML = h;
+}
+
+function goToLogin(r) {
+    pendingAction = r || 'home';
+    var b = document.getElementById('loginBackBtn'), g = document.getElementById('guestContinue');
+    if (b) b.style.display = 'flex';
+    if (g) g.style.display = 'block';
+    showScreen('login','slide-in');
+}
+function cancelAuth() {
+    var back = pendingAction || 'home';
+    pendingAction = null;
+    if (back === 'checkout') back = 'cart';
+    showScreen(back,'slide-back');
+}
+function formatPhone(input) {
+    var d = input.value.replace(/\D/g,'').slice(0,10), f = '';
+    if (d.length>0) f = '('+d.slice(0,3);
+    if (d.length>=4) f += ') '+d.slice(3,6);
+    if (d.length>=7) f += '-'+d.slice(6,8);
+    if (d.length>=9) f += '-'+d.slice(8,10);
+    input.value = f;
+    document.getElementById('sendCodeBtn').disabled = d.length !== 10;
+}
+function sendCode() {
+    var input = document.getElementById('phoneInput');
+    var d = input.value.replace(/\D/g,'');
+    if (d.length !== 10) { alert('Введите полный номер'); return; }
+    var full = '+7'+d;
+    safeSet('funica-pending-phone', full);
+    document.getElementById('verifyPhone').textContent = full;
+    document.querySelectorAll('.code-input').forEach(function(i){i.value='';i.classList.remove('filled')});
+    showScreen('verify','slide-in');
+    setTimeout(function(){document.querySelector('.code-input').focus()},200);
+    startResendTimer();
+}
+var resendInterval = null;
+function startResendTimer() {
+    if (resendInterval) clearInterval(resendInterval);
+    var time = 59;
+    document.getElementById('resendTimer').textContent = time;
+    resendInterval = setInterval(function(){
+        time--;
+        document.getElementById('resendTimer').textContent = time;
+        if (time<=0) { clearInterval(resendInterval); document.getElementById('resendTimer').textContent = '0'; }
+    },1000);
+}
+function onCodeInput(input) {
+    input.value = input.value.replace(/\D/g,'').slice(0,1);
+    if (input.value) input.classList.add('filled'); else input.classList.remove('filled');
+    var idx = parseInt(input.dataset.index);
+    if (input.value && idx < 3) document.querySelector('.code-input[data-index="'+(idx+1)+'"]').focus();
+    var code = Array.from(document.querySelectorAll('.code-input')).map(function(i){return i.value}).join('');
+    if (code.length === 4) setTimeout(verifyCode,200);
+}
+function verifyCode() {
+    var inputs = document.querySelectorAll('.code-input');
+    var code = Array.from(inputs).map(function(i){return i.value}).join('');
+    if (code.length !== 4) { alert('Введите код'); return; }
+    if (code !== '1234') { alert('Неверный код. Демо-код: 1234'); inputs.forEach(function(i){i.value='';i.classList.remove('filled')}); inputs[0].focus(); return; }
+    var phone = safeGet('funica-pending-phone');
+    var wasGuest = !getCurrentUser();
+    var gc = [], gf = [];
+    if (wasGuest) {
+        try { gc = JSON.parse(safeGet('funica-guest-cart')||'[]'); } catch(e){}
+        try { gf = JSON.parse(safeGet('funica-guest-favorites')||'[]'); } catch(e){}
+    }
+    safeSet('funica-current-user', phone);
+    safeRemove('funica-pending-phone');
+    if (resendInterval) clearInterval(resendInterval);
+    loadState();
+    if (wasGuest) {
+        for (var i = 0; i < gc.length; i++) {
+            var ex = null;
+            for (var j = 0; j < cart.length; j++) if (cart[j].id === gc[i].id) { ex = cart[j]; break; }
+            if (ex) ex.qty += gc[i].qty; else cart.push(gc[i]);
+        }
+        for (var k = 0; k < gf.length; k++) if (favorites.indexOf(gf[k]) === -1) favorites.push(gf[k]);
+        if (userBonuses === 0) userBonuses = 500;
+        addNotification('🎁','notif_welcome_title','notif_welcome_text');
+        saveState();
+        safeRemove('funica-guest-cart');
+        safeRemove('funica-guest-favorites');
+    }
+    isGuest = false;
+    updateUserUI();
+    renderProducts(); renderCatalog(); updateCartUI(); renderBonusCard(); renderAddresses(); renderPayments();
+    var back = pendingAction || 'home';
+    pendingAction = null;
+    if (back === 'checkout' && cart.length > 0) openCheckout();
+    else if (back === 'profile') { showScreen('profile','fade'); setNavActive(4); }
+    else if (back === 'product' && currentProduct) { openProduct(currentProduct.id); }
+    else { showScreen('home','fade'); setNavActive(0); }
+    document.getElementById('bottomNav').classList.remove('hidden');
+}
+function logout() {
+    if (!confirm('Выйти?')) return;
+    saveState();
+    safeRemove('funica-current-user');
+    cart = []; favorites = []; userBonuses = 0; userAddresses = []; userCards = []; userOrders = []; userNotifications = [];
+    isGuest = true;
+    document.getElementById('phoneInput').value = '';
+    document.getElementById('sendCodeBtn').disabled = true;
+    updateUserUI(); updateCartUI(); renderProducts(); renderBonusCard(); renderAddresses(); renderPayments();
+    showScreen('home','fade'); setNavActive(0);
+}
+function updateUserUI() {
+    var phone = getCurrentUser();
+    var gn = document.getElementById('greetingName'), ha = document.getElementById('headerAvatar');
+    var pa = document.getElementById('profileAvatar'), pn = document.getElementById('profileName'), pp = document.getElementById('profilePhone');
+    var lo = document.getElementById('logoutBtn'), gc = document.getElementById('guestCta'), gb = document.getElementById('guestBanner'), bh = document.getElementById('bonusCardHolder');
+    if (!phone) {
+        isGuest = true;
+        if (gn) gn.textContent = t('guest');
+        if (ha) { ha.textContent = '👤'; ha.className = 'avatar guest'; }
+        if (pa) { pa.textContent = '👤'; pa.className = 'profile-avatar guest'; }
+        if (pn) pn.textContent = t('guest');
+        if (pp) pp.textContent = t('not_auth');
+        if (lo) lo.style.display = 'none';
+        if (gc) gc.style.display = 'block';
+        if (gb) gb.style.display = 'flex';
+        if (bh) bh.textContent = 'GUEST';
+    } else {
+        isGuest = false;
+        var l4 = phone.slice(-4), l2 = phone.slice(-2);
+        if (gn) gn.textContent = t('user')+' '+l4;
+        if (ha) { ha.textContent = l2; ha.className = 'avatar'; }
+        if (pa) { pa.textContent = l2; pa.className = 'profile-avatar'; }
+        if (pn) pn.textContent = t('user')+' '+l4;
+        if (pp) pp.textContent = phone;
+        if (lo) lo.style.display = 'flex';
+        if (gc) gc.style.display = 'none';
+        if (gb) gb.style.display = 'none';
+        if (bh) bh.textContent = 'USER '+l4;
+    }
+}
+function saveState() {
+    var phone = getCurrentUser();
+    if (phone) {
+        try {
+            var au = JSON.parse(safeGet('funica-users')||'{}');
+            au[phone] = {cart:cart,favorites:favorites,bonuses:userBonuses,userReviews:userReviews,userAddresses:userAddresses,userCards:userCards,userOrders:userOrders,userNotifications:userNotifications};
+            safeSet('funica-users', JSON.stringify(au));
+        } catch(e){}
+    } else {
+        safeSet('funica-guest-cart', JSON.stringify(cart));
+        safeSet('funica-guest-favorites', JSON.stringify(favorites));
+    }
+}
+function loadState() {
+    var phone = getCurrentUser();
+    if (!phone) {
+        try { cart = JSON.parse(safeGet('funica-guest-cart')||'[]'); favorites = JSON.parse(safeGet('funica-guest-favorites')||'[]'); } catch(e){cart=[];favorites=[]}
+        userBonuses=0;userReviews={};userAddresses=[];userCards=[];userOrders=[];userNotifications=[];
+        return;
+    }
+    try {
+        var au = JSON.parse(safeGet('funica-users')||'{}');
+        var d = au[phone] || {};
+        cart = d.cart || []; favorites = d.favorites || [];
+        userBonuses = d.bonuses !== undefined ? d.bonuses : 0;
+        userReviews = d.userReviews || {}; userAddresses = d.userAddresses || []; userCards = d.userCards || [];
+        userOrders = d.userOrders || []; userNotifications = d.userNotifications || [];
+    } catch(e){}
+}
+function saveBonuses(){saveState()}
+function formatPrice(n){return Math.round(n).toLocaleString('ru-RU')+' ₽'}
+
+function getAllReviews(pid){var b=defaultReviews[pid]?defaultReviews[pid].slice():[];var u=userReviews[pid]?userReviews[pid].slice():[];return u.concat(b)}
+function getAverageRating(pid){var r=getAllReviews(pid);if(r.length===0)return{avg:0,count:0};var s=0;for(var i=0;i<r.length;i++)s+=r[i].rating;return{avg:(s/r.length).toFixed(1),count:r.length}}
+function getStarsString(r){var f=Math.round(r),s='';for(var i=0;i<5;i++)s+=i<f?'★':'☆';return s}
+function renderReviewsSection(pid) {
+    var reviews = getAllReviews(pid), stats = getAverageRating(pid);
+    if (document.getElementById('avgRating')) document.getElementById('avgRating').textContent = stats.avg;
+    if (document.getElementById('avgStars')) document.getElementById('avgStars').textContent = getStarsString(parseFloat(stats.avg));
+    if (document.getElementById('avgCount')) document.getElementById('avgCount').textContent = stats.count;
+    var dist = {5:0,4:0,3:0,2:0,1:0};
+    for (var i = 0; i < reviews.length; i++) dist[reviews[i].rating] = (dist[reviews[i].rating]||0)+1;
+    var de = document.getElementById('distribution');
+    if (de) {
+        var h = '';
+        for (var s = 5; s >= 1; s--) {
+            var c = dist[s]||0, p = reviews.length>0 ? (c/reviews.length)*100 : 0;
+            h += '<div class="dist-row"><span class="dist-label">'+s+'★</span><div class="dist-bar"><div class="dist-fill" style="width:'+p+'%"></div></div><span class="dist-count">'+c+'</span></div>';
+        }
+        de.innerHTML = h;
+    }
+    var le = document.getElementById('reviewsList');
+    if (le) {
+        var lh = '';
+        for (var j = 0; j < reviews.length; j++) {
+            var r = reviews[j], init = r.author.charAt(0).toUpperCase(), col = getAvatarColor(r.author);
+            lh += '<div class="review-item"><div class="review-header"><div class="review-avatar" style="background:'+col+'">'+init+'</div>';
+            lh += '<div class="review-info"><div class="review-author">'+r.author+'</div><div class="review-stars">'+getStarsString(r.rating)+'</div></div>';
+            lh += '<div class="review-date">'+r.date+'</div></div><div class="review-text">'+r.text+'</div></div>';
+        }
+        le.innerHTML = lh;
+    }
+    if (document.getElementById('productStars')) document.getElementById('productStars').textContent = getStarsString(parseFloat(stats.avg));
+    if (document.getElementById('productRatingText')) document.getElementById('productRatingText').textContent = stats.avg+' · '+stats.count;
+}
+function scrollToReviews(){var el=document.getElementById('reviewsSection');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+function openReviewModal(){
+    if(!currentProduct) return;
+    if (!isLoggedIn()) {
+        if (confirm(t('login_to_review') + '\n\n' + t('login_now'))) {
+            goToLogin('product');
+        }
+        return;
+    }
+    newReviewRating=0;
+    document.getElementById('reviewProductName').textContent=currentProduct.name;
+    document.getElementById('reviewText').value='';
+    document.getElementById('reviewSubmitBtn').disabled=true;
+    document.querySelectorAll('.star-selector-btn').forEach(function(b){b.classList.remove('active')});
+    document.getElementById('reviewModalOverlay').classList.add('show')
+}
+function closeReviewModal(){document.getElementById('reviewModalOverlay').classList.remove('show')}
+function closeReviewModalOnBg(e){if(e.target.id==='reviewModalOverlay')closeReviewModal()}
+function selectStar(s){newReviewRating=s;document.querySelectorAll('.star-selector-btn').forEach(function(b){if(parseInt(b.dataset.star)<=s)b.classList.add('active');else b.classList.remove('active')});updateSubmitButton()}
+function updateSubmitButton(){var text=document.getElementById('reviewText').value.trim();document.getElementById('reviewSubmitBtn').disabled=!(newReviewRating>0&&text.length>=5)}
+function submitReview() {
+    if (!currentProduct) return;
+    if (!isLoggedIn()) { alert(t('login_to_review')); return; }
+    if (newReviewRating === 0) { alert('Поставьте оценку'); return; }
+    var text = document.getElementById('reviewText').value.trim();
+    if (text.length < 5) { alert('Мин 5 символов'); return; }
+    var today = new Date();
+    var months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    var dateStr = today.getDate()+' '+months[today.getMonth()];
+    if (!userReviews[currentProduct.id]) userReviews[currentProduct.id] = [];
+    userReviews[currentProduct.id].unshift({author:'Вы',rating:newReviewRating,text:text,date:dateStr});
+    saveState();
+    renderReviewsSection(currentProduct.id);
+    closeReviewModal();
+    setTimeout(function(){scrollToReviews()},200);
+}
+
+function goToSlide(i) {
+    var slides = document.querySelectorAll('.onboarding-slide'), dots = document.querySelectorAll('.dot');
+    slides.forEach(function(s,x){s.classList.remove('active','prev');if(x<i)s.classList.add('prev')});
+    slides[i].classList.add('active');
+    dots.forEach(function(d,x){d.classList.toggle('active',x===i)});
+    currentSlide = i;
+    document.getElementById('onboardingBtn').textContent = (i===totalSlides-1)?t('start'):t('next');
+}
+function nextSlide(){if(currentSlide<totalSlides-1)goToSlide(currentSlide+1);else finishOnboarding()}
+function finishOnboarding() {
+    safeSet('funica-onboarding-done','true');
+    loadState(); updateUserUI(); renderProducts(); renderCatalog(); updateCartUI(); renderBonusCard(); renderAddresses(); renderPayments();
+    document.getElementById('favCount').textContent = favorites.length;
+    showScreen('home','fade'); setNavActive(0);
+    document.getElementById('bottomNav').classList.remove('hidden');
+    setTimeout(function(){moveNavIndicator(0)},400);
+}
+function showOnboarding(){currentSlide=0;goToSlide(0);showScreen('onboarding','fade');document.getElementById('bottomNav').classList.add('hidden')}
+
+function openCatalog(){renderCatalog();setNavActive(1);showScreen('catalog','slide-in')}
+function handleCatalogSearch(v){catalogSearch=v;renderCatalog()}
+function setCatalogFilter(cat,el){catalogFilter=cat;document.querySelectorAll('#catalogFilters .filter-chip').forEach(function(c){c.classList.remove('active')});el.classList.add('active');renderCatalog()}
+function openSortSheet() {
+    var opts = [{v:'popular',k:'sort_popular'},{v:'price-asc',k:'sort_price_asc'},{v:'price-desc',k:'sort_price_desc'},{v:'new',k:'sort_new'}];
+    var msg = '';
+    for (var i = 0; i < opts.length; i++) msg += (i+1)+'. '+t(opts[i].k)+'\n';
+    var idx = parseInt(prompt(msg))-1;
+    if (idx >= 0 && idx < opts.length) {
+        catalogSort = opts[idx].v;
+        document.getElementById('sortLabel').textContent = t(opts[idx].k);
+        renderCatalog();
+    }
+}
+function toggleViewMode() {
+    catalogView = catalogView === 'grid' ? 'list' : 'grid';
+    document.getElementById('viewLabel').textContent = catalogView==='grid'?t('view_grid'):t('view_list');
+    document.getElementById('viewBtn').classList.toggle('active', catalogView==='list');
+    renderCatalog();
+}
+function getCatalogProducts() {
+    var f = products.slice();
+    if (catalogFilter !== 'all') f = f.filter(function(p){return p.category===catalogFilter});
+    if (catalogSearch.trim()) { var q = catalogSearch.toLowerCase().trim(); f = f.filter(function(p){return p.name.toLowerCase().indexOf(q)!==-1}); }
+    if (catalogSort==='price-asc') f.sort(function(a,b){return a.price-b.price});
+    else if (catalogSort==='price-desc') f.sort(function(a,b){return b.price-a.price});
+    else if (catalogSort==='new') f.sort(function(a,b){return b.id-a.id});
+    else f.sort(function(a,b){return b.popularity-a.popularity});
+    return f;
+}
+function renderCatalog() {
+    var g = document.getElementById('catalogGrid');
+    if (!g) return;
+    var f = getCatalogProducts();
+    document.getElementById('catalogCount').textContent = f.length;
+    g.classList.toggle('list-view', catalogView==='list');
+    if (f.length === 0) { g.innerHTML = '<div class="no-results"><span class="icon">🔍</span><h3>'+t('orders_empty')+'</h3></div>'; return; }
+    var h = '';
+    for (var i = 0; i < f.length; i++) {
+        var p = f[i], isFav = favorites.indexOf(p.id) !== -1;
+        h += '<div class="product-card" onclick="openProduct('+p.id+')">';
+        h += '<div class="product-img" style="background-image:url(&quot;'+p.img+'&quot;)"></div>';
+        h += '<div class="product-info">';
+        h += '<button class="fav-btn" style="'+(isFav?'color:#E63946;':'')+'" onclick="toggleFav(event,this,'+p.id+')">'+(isFav?'♥':'♡')+'</button>';
+        h += '<h4 class="product-title">'+p.name+'</h4><p class="product-price">'+formatPrice(p.price)+'</p></div></div>';
+    }
+    g.innerHTML = h;
+}
+
+function openAddresses(){renderAddresses();setNavActive(4);showScreen('addresses','slide-in')}
+function renderAddresses() {
+    var c = document.getElementById('addressesContent');
+    if (!c) return;
+    document.getElementById('addressesCount').textContent = userAddresses.length;
+    if (userAddresses.length === 0) {
+        c.innerHTML = '<div class="empty-state"><span class="icon">📍</span><h2>'+t('no_address')+'</h2><p>'+t('no_address_hint')+'</p><button onclick="addNewAddress()">'+t('add_address')+'</button></div>';
+        return;
+    }
+    var h = '<button class="add-new-btn" onclick="addNewAddress()">'+t('add_address')+'</button>';
+    for (var i = 0; i < userAddresses.length; i++) {
+        var a = userAddresses[i];
+        h += '<div class="address-card'+(a.isDefault?' default':'')+'"><div class="address-card-header"><span class="address-card-icon">'+(a.icon||'📍')+'</span>';
+        h += '<span class="address-card-label">'+a.label+'</span>';
+        if (a.isDefault) h += '<span class="address-card-default-badge">'+t('main')+'</span>';
+        h += '</div><div class="address-card-text">'+a.city+', '+a.address+'</div>';
+        h += '<div class="address-card-actions">';
+        if (!a.isDefault) h += '<button class="address-action-btn" onclick="setDefaultAddress('+a.id+')">'+t('make_default')+'</button>';
+        h += '<button class="address-action-btn delete" onclick="deleteAddress('+a.id+')">'+t('delete')+'</button></div></div>';
+    }
+    c.innerHTML = h;
+}
+function addNewAddress(){var l=prompt('Название (например, Дом):');if(!l)return;var c=prompt('Город:','Москва');if(!c)return;var a=prompt('Адрес:');if(!a)return;var isFirst = userAddresses.length === 0;userAddresses.push({id:Date.now(),label:l,icon:'📍',city:c,address:a,isDefault:isFirst});saveState();renderAddresses()}
+function setDefaultAddress(id){userAddresses.forEach(function(a){a.isDefault=a.id===id});saveState();renderAddresses()}
+function deleteAddress(id){if(!confirm('Удалить?'))return;userAddresses=userAddresses.filter(function(a){return a.id!==id});if(userAddresses.length>0 && !userAddresses.some(function(a){return a.isDefault}))userAddresses[0].isDefault=true;saveState();renderAddresses()}
+
+function openPayments(){renderPayments();setNavActive(4);showScreen('payments','slide-in')}
+function renderPayments() {
+    var c = document.getElementById('paymentsContent');
+    if (!c) return;
+    document.getElementById('paymentsCount').textContent = userCards.length;
+    if (userCards.length === 0) {
+        c.innerHTML = '<div class="empty-state"><span class="icon">💳</span><h2>'+t('no_card')+'</h2><p>'+t('no_card_hint')+'</p><button onclick="addNewCard()">'+t('add_card')+'</button></div>';
+        return;
+    }
+    var h = '<button class="add-new-btn" onclick="addNewCard()">'+t('add_card')+'</button>';
+    for (var i = 0; i < userCards.length; i++) {
+        var card = userCards[i];
+        h += '<div class="pay-card '+card.type+'"><div class="pay-card-top"><div class="pay-card-brand">Funica</div><div class="pay-card-system">'+card.system+'</div></div>';
+        h += '<div class="pay-card-number">•••• •••• •••• '+card.number+'</div>';
+        h += '<div class="pay-card-bottom"><div><div class="pay-card-label">'+t('card_holder')+'</div><div class="pay-card-value">'+card.holder+'</div></div>';
+        h += '<div><div class="pay-card-label">'+t('card_expiry')+'</div><div class="pay-card-value">'+card.expiry+'</div></div>';
+        if (card.isDefault) h += '<div class="pay-card-default-badge">'+t('card_main')+'</div>';
+        h += '</div></div><div class="pay-card-actions">';
+        if (!card.isDefault) h += '<button class="address-action-btn" onclick="setDefaultCard('+card.id+')">'+t('make_default')+'</button>';
+        h += '<button class="address-action-btn delete" onclick="deleteCard('+card.id+')">'+t('delete')+'</button></div>';
+    }
+    c.innerHTML = h;
+}
+function addNewCard(){var n=prompt('Последние 4 цифры:');if(!n||n.length<4)return;n=n.slice(-4);var h=prompt('Имя:','ALEX IVANOV');if(!h)return;var e=prompt('Срок:','12/28');if(!e)return;var s=prompt('VISA/MC/MIR:','VISA');if(!s)return;var type=s.toUpperCase()==='VISA'?'visa':(s.toUpperCase()==='MIR'?'mir':'mastercard');var isFirst=userCards.length===0;userCards.push({id:Date.now(),system:s.toUpperCase(),number:n,holder:h.toUpperCase(),expiry:e,isDefault:isFirst,type:type});saveState();renderPayments()}
+function setDefaultCard(id){userCards.forEach(function(c){c.isDefault=c.id===id});saveState();renderPayments()}
+function deleteCard(id){if(!confirm('Удалить?'))return;userCards=userCards.filter(function(c){return c.id!==id});if(userCards.length>0 && !userCards.some(function(c){return c.isDefault}))userCards[0].isDefault=true;saveState();renderPayments()}
+
+function openLanguage(){renderLanguage();setNavActive(4);showScreen('language','slide-in')}
+function renderLanguage() {
+    var c = document.getElementById('languageContent');
+    if (!c) return;
+    var h = '';
+    for (var i = 0; i < LANGUAGES.length; i++) {
+        var l = LANGUAGES[i];
+        h += '<div class="lang-option'+(currentLanguage===l.code?' active':'')+'" onclick="setLanguage(\''+l.code+'\',\''+l.name+'\')">';
+        h += '<div class="lang-flag">'+l.flag+'</div>';
+        h += '<div class="lang-info"><div class="lang-name">'+l.name+'</div><div class="lang-native">'+l.native+'</div></div>';
+        h += '<div class="lang-check">✓</div></div>';
+    }
+    c.innerHTML = h;
+}
+function setLanguage(code, name) {
+    currentLanguage = code;
+    safeSet('funica-language', code);
+    document.getElementById('languageValue').textContent = name;
+    applyLanguage();
+    renderLanguage();
+}
+
+function openHelp(){renderFaq();setNavActive(4);showScreen('help','slide-in')}
+function renderFaq() {
+    var c = document.getElementById('faqContent');
+    if (!c) return;
+    var h = '';
+    for (var i = 0; i < FAQ.length; i++) {
+        h += '<div class="faq-item" onclick="this.classList.toggle(\'open\')"><div class="faq-question">'+FAQ[i].q+'<span class="arrow">▼</span></div><div class="faq-answer">'+FAQ[i].a+'</div></div>';
+    }
+    c.innerHTML = h;
+}
+
+var QUICK_REPLIES = [
+    {ru:'Как оформить заказ?',en:'How to place an order?',kz:'Тапсырысты қалай беруге болады?'},
+    {ru:'Сроки доставки',en:'Delivery time',kz:'Жеткізу уақыты'},
+    {ru:'Как вернуть товар?',en:'How to return?',kz:'Қалай қайтаруға болады?'},
+    {ru:'Как работают бонусы?',en:'How do bonuses work?',kz:'Бонустар қалай жұмыс істейді?'},
+    {ru:'Статус моего заказа',en:'My order status',kz:'Тапсырыс мәртебесі'}
+];
+
+function openChat() {
+    renderChatQuickReplies();
+    renderChatMessages();
+    showScreen('chat','slide-in');
+    if (chatMessages.length === 0) {
+        setTimeout(function(){
+            var g = currentLanguage==='en'?'Hello! 👋 My name is Maria. How can I help?':(currentLanguage==='kz'?'Сәлеметсіз бе! 👋 Менің атым Мария.':'Здравствуйте! 👋 Меня зовут Мария, я оператор Funica. Чем могу помочь?');
+            addChatMessage('operator', g);
+        }, 300);
+    }
+    setTimeout(function(){scrollChatToBottom()},400);
+}
+function closeChat(){showScreen('help','slide-back');setNavActive(4)}
+function renderChatQuickReplies() {
+    var c = document.getElementById('chatQuickReplies');
+    if (!c) return;
+    var h = '';
+    for (var i = 0; i < QUICK_REPLIES.length; i++) {
+        var q = QUICK_REPLIES[i], text = q[currentLanguage]||q.ru;
+        h += '<button class="chat-quick-reply" onclick="sendQuickReply(\''+text.replace(/'/g,"\\'")+'\')">'+text+'</button>';
+    }
+    c.innerHTML = h;
+}
+function renderChatMessages() {
+    var c = document.getElementById('chatMessages');
+    if (!c) return;
+    var h = '';
+    for (var i = 0; i < chatMessages.length; i++) {
+        var m = chatMessages[i];
+        h += '<div class="chat-msg '+m.sender+'"><div class="chat-bubble">'+escapeHtml(m.text).replace(/\n/g,'<br>')+'</div><div class="chat-time">'+m.time+'</div></div>';
+    }
+    c.innerHTML = h;
+    scrollChatToBottom();
+}
+function escapeHtml(t){var d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function addChatMessage(s,t){var n=new Date();var tm=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');chatMessages.push({sender:s,text:t,time:tm});renderChatMessages()}
+function onChatInput(){var i=document.getElementById('chatInput'),b=document.getElementById('chatSendBtn');i.style.height='auto';i.style.height=Math.min(i.scrollHeight,100)+'px';b.disabled=!i.value.trim()}
+function sendChatMessage(){var i=document.getElementById('chatInput');var t=i.value.trim();if(!t)return;i.value='';i.style.height='auto';document.getElementById('chatSendBtn').disabled=true;sendUserMessage(t)}
+function sendQuickReply(t){sendUserMessage(t)}
+function sendUserMessage(t) {
+    addChatMessage('user', t);
+    scrollChatToBottom();
+    if (chatAwaitingReply) return;
+    chatAwaitingReply = true;
+    showTypingIndicator();
+    setTimeout(function(){
+        hideTypingIndicator();
+        var r = getAutoReply(t);
+        addChatMessage('operator', r);
+        chatAwaitingReply = false;
+        scrollChatToBottom();
+    }, 800 + Math.random()*700);
+}
+function getAutoReply(t) {
+    var l = t.toLowerCase();
+    if (l.indexOf('статус')!==-1||l.indexOf('status')!==-1||(l.indexOf('заказ')!==-1&&l.indexOf('где')!==-1)||l.indexOf('my order')!==-1) {
+        if (isGuest) return currentLanguage==='en'?'Please sign in to track orders.':(currentLanguage==='kz'?'Тапсырысты бақылау үшін кіріңіз.':'Войдите в аккаунт чтобы отследить заказ.');
+        if (userOrders.length === 0) return currentLanguage==='en'?"You don't have any orders yet.":(currentLanguage==='kz'?'Сізде әзірге тапсырыстар жоқ.':'У вас пока нет оформленных заказов 🤷‍♀️ Оформите первый!');
+        var last = userOrders[0];
+        var st = t(last.status==='shipping'?'in_stock':(last.status==='delivered'?'delivered':'cancelled'));
+        return (currentLanguage==='en'?'Your last order '+last.id+' — '+st:currentLanguage==='kz'?'Соңғы тапсырысыңыз '+last.id+' — '+st:'Ваш последний заказ '+last.id+' — '+st)+' 📦';
+    }
+    if ((l.indexOf('заказ')!==-1&&l.indexOf('оформ')!==-1)||(l.indexOf('order')!==-1&&l.indexOf('how')!==-1)) return currentLanguage==='en'?'Add items → Cart → Checkout → Confirm. 😊':(currentLanguage==='kz'?'Тауарлар қосыңыз → Себет → Рәсімдеу → Растау.':'Добавьте товары → Корзина → Оформить → Подтвердить. 😊');
+    if (l.indexOf('доставк')!==-1||l.indexOf('срок')!==-1||l.indexOf('delivery')!==-1) return currentLanguage==='en'?'In Moscow 1-2 days. In Russia 3-7 days.':(currentLanguage==='kz'?'Мәскеуде 1-2 күн, Ресейде 3-7 күн.':'По Москве 1-2 дня, по России 3-7 дней.');
+    if (l.indexOf('возврат')!==-1||l.indexOf('верну')!==-1||l.indexOf('return')!==-1) return currentLanguage==='en'?'Return within 14 days.':(currentLanguage==='kz'?'14 күн ішінде.':'Возврат в течение 14 дней.');
+    if (l.indexOf('бонус')!==-1||l.indexOf('bonus')!==-1) return currentLanguage==='en'?'5% cashback. 1 bonus = 1 ₽.':(currentLanguage==='kz'?'5% кэшбэк. 1 бонус = 1 ₽.':'5% кэшбэк. 1 бонус = 1 ₽.');
+    if (l.indexOf('привет')!==-1||l.indexOf('здравств')!==-1||l.indexOf('hello')!==-1||l.indexOf('hi')!==-1) return currentLanguage==='en'?'Hello! 😊':(currentLanguage==='kz'?'Сәлеметсіз бе! 😊':'Здравствуйте! 😊');
+    if (l.indexOf('спасибо')!==-1||l.indexOf('thank')!==-1) return currentLanguage==='en'?"You're welcome! 💚":(currentLanguage==='kz'?'Оқасы жоқ! 💚':'Всегда рада помочь! 💚');
+    return currentLanguage==='en'?'Thanks! Will reply shortly.':(currentLanguage==='kz'?'Рахмет! Жақын арада хабарласамын.':'Спасибо за вопрос! Уточню и вернусь.');
+}
+function showTypingIndicator(){var c=document.getElementById('chatMessages');if(!c)return;var e=document.createElement('div');e.className='chat-typing';e.id='chatTyping';e.innerHTML='<div class="chat-typing-dot"></div><div class="chat-typing-dot"></div><div class="chat-typing-dot"></div>';c.appendChild(e);scrollChatToBottom()}
+function hideTypingIndicator(){var e=document.getElementById('chatTyping');if(e)e.remove()}
+function scrollChatToBottom(){var c=document.getElementById('chatMessages');if(c)c.scrollTop=c.scrollHeight}
+
+function getBonusLevel(a){for(var i=0;i<BONUS_LEVELS.length;i++){if(a>=BONUS_LEVELS[i].min&&a<BONUS_LEVELS[i].max)return BONUS_LEVELS[i]}return BONUS_LEVELS[BONUS_LEVELS.length-1]}
+function getNextLevel(a){for(var i=0;i<BONUS_LEVELS.length;i++){if(a<BONUS_LEVELS[i].min)return BONUS_LEVELS[i]}return null}
+function renderBonusCard() {
+    var a = document.getElementById('bonusCardAmount'), ti = document.getElementById('bonusCardTier');
+    var fi = document.getElementById('bonusProgressFill'), co = document.getElementById('bonusProgressCount');
+    var hi = document.getElementById('bonusProgressHint'), st = document.getElementById('bonusStatValue');
+    var pt = document.getElementById('bonusProgressTitle');
+    if (a) a.textContent = userBonuses.toLocaleString('ru-RU');
+    if (st) st.textContent = userBonuses.toLocaleString('ru-RU');
+    var lv = getBonusLevel(userBonuses);
+    if (ti) ti.textContent = lv.name;
+    var nx = getNextLevel(userBonuses);
+    if (nx && fi && co && hi) {
+        var p = ((userBonuses-lv.min)/(nx.min-lv.min))*100;
+        fi.style.width = Math.min(p,100)+'%';
+        co.textContent = userBonuses.toLocaleString('ru-RU')+' / '+nx.min.toLocaleString('ru-RU');
+        if (pt) pt.textContent = t('to_level')+' '+nx.name;
+        var r = nx.min - userBonuses;
+        hi.textContent = currentLanguage==='en'?r.toLocaleString('ru-RU')+' bonuses to '+nx.name:currentLanguage==='kz'?nx.name+' деңгейіне '+r.toLocaleString('ru-RU'):'До уровня '+nx.name+' осталось '+r.toLocaleString('ru-RU')+' бонусов';
+    }
+}
+function renderBonusHistory() {
+    var c = document.getElementById('bonusHistory');
+    if (!c) return;
+    var h = '';
+    for (var i = 0; i < demoBonusHistory.length; i++) {
+        var b = demoBonusHistory[i];
+        h += '<div class="bonus-history-item"><div class="bonus-history-icon">'+b.icon+'</div>';
+        h += '<div class="bonus-history-info"><div class="bonus-history-title-text">'+b.title+'</div><div class="bonus-history-date">'+b.date+'</div></div>';
+        var sg = b.type === 'plus' ? '+' : '−', cls = b.type === 'plus' ? 'plus' : 'minus';
+        h += '<div class="bonus-history-amount '+cls+'">'+sg+' '+b.amount.toLocaleString('ru-RU')+'</div></div>';
+    }
+    c.innerHTML = h;
+}
+function openBonus(){renderBonusCard();renderBonusHistory();setNavActive(4);showScreen('bonus','slide-in')}
+
+function calculatePromoDiscount(code, total) {
+    var p = PROMOCODES[code];
+    if (!p) return 0;
+    var d = 0;
+    if (p.type === 'percent') { d = Math.floor(total*p.value/100); if (p.max && d > p.max) d = p.max; }
+    else if (p.type === 'fixed') d = p.value;
+    if (d > total) d = total;
+    return d;
+}
+function applyPromo() {
+    var input = document.getElementById('promoInput'), msg = document.getElementById('promoMessage');
+    if (!input || !msg) return;
+    var code = input.value.trim().toUpperCase();
+    if (!code) { msg.textContent = 'Введите промокод'; msg.className = 'promo-message error show'; return; }
+    if (!PROMOCODES[code]) { msg.textContent = 'Не найден'; msg.className = 'promo-message error show'; return; }
+    if (appliedPromo && appliedPromo.code === code) { msg.textContent = 'Уже применён'; msg.className = 'promo-message error show'; return; }
+    var total = getCartTotal(), d = calculatePromoDiscount(code, total);
+    if (d === 0) { msg.textContent = 'Нельзя применить'; msg.className = 'promo-message error show'; return; }
+    appliedPromo = {code:code, discount:d, description:PROMOCODES[code].description};
+    promoDiscount = d;
+    msg.textContent = '✓ Применён';
+    msg.className = 'promo-message success show';
+    input.value = '';
+    renderCart();
+}
+function removePromo(){appliedPromo=null;promoDiscount=0;renderCart()}
+
+function renderProducts() {
+    var g = document.getElementById('productsGrid');
+    if (!g) return;
+    var f = products;
+    if (currentFilter !== 'all') f = f.filter(function(p){return p.category===currentFilter});
+    if (currentSearch.trim()) { var q = currentSearch.toLowerCase().trim(); f = f.filter(function(p){return p.name.toLowerCase().indexOf(q)!==-1}); }
+    var ti = document.getElementById('sectionTitle');
+    if (ti) {
+        if (currentSearch.trim()) ti.textContent = t('found')+': '+f.length;
+        else if (currentFilter === 'all') ti.textContent = t('popular');
+        else { var n = {sofa:'f_sofa',chair:'f_chair',table:'f_table',light:'f_light',decor:'f_decor'}; ti.textContent = t(n[currentFilter]||'popular'); }
+    }
+    if (f.length === 0) { g.innerHTML = '<div class="no-results"><span class="icon">🔍</span><h3>'+t('orders_empty')+'</h3></div>'; return; }
+    var h = '';
+    for (var i = 0; i < f.length; i++) {
+        var p = f[i], isFav = favorites.indexOf(p.id) !== -1;
+        h += '<div class="product-card" onclick="openProduct('+p.id+')">';
+        h += '<div class="product-img" style="background-image:url(&quot;'+p.img+'&quot;)"></div>';
+        h += '<button class="fav-btn" style="'+(isFav?'color:#E63946;':'')+'" onclick="toggleFav(event,this,'+p.id+')">'+(isFav?'♥':'♡')+'</button>';
+        h += '<h4 class="product-title">'+p.name+'</h4><p class="product-price">'+formatPrice(p.price)+'</p></div>';
+    }
+    g.innerHTML = h;
+}
+function renderFavorites() {
+    var g = document.getElementById('favoritesGrid'), ce = document.getElementById('favHeaderCount');
+    if (!g) return;
+    if (ce) ce.textContent = favorites.length;
+    if (favorites.length === 0) {
+        g.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><span class="icon">💔</span><h2>'+t('favorites')+'</h2><p>'+t('cart_empty_text')+'</p><button onclick="showScreen(\'home\',\'fade\');setNavActive(0)">'+t('go_catalog')+'</button></div>';
+        return;
+    }
+    var h = '';
+    for (var i = 0; i < products.length; i++) {
+        var p = products[i];
+        if (favorites.indexOf(p.id) === -1) continue;
+        h += '<div class="product-card" onclick="openProduct('+p.id+')">';
+        h += '<div class="product-img" style="background-image:url(&quot;'+p.img+'&quot;)"></div>';
+        h += '<button class="fav-btn" style="color:#E63946" onclick="toggleFav(event,this,'+p.id+')">♥</button>';
+        h += '<h4 class="product-title">'+p.name+'</h4><p class="product-price">'+formatPrice(p.price)+'</p></div>';
+    }
+    g.innerHTML = h;
+}
+function handleSearch(v){currentSearch=v;var b=document.getElementById('searchClear');if(b)b.classList.toggle('show',v.length>0);renderProducts()}
+function clearSearch(){document.getElementById('searchInput').value='';currentSearch='';document.getElementById('searchClear').classList.remove('show');renderProducts()}
+function setFilter(c,el){currentFilter=c;document.querySelectorAll('#home .filter-chip').forEach(function(x){x.classList.remove('active')});el.classList.add('active');renderProducts()}
+
+function showScreen(id,a) {
+    if (!a) a = 'fade';
+    var ca = document.querySelector('.screen.active, .screen.slide-in, .screen.slide-back, .screen.fade-in');
+    if (ca && ca.id !== id) previousScreen = ca.id;
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active','slide-in','slide-back','fade-in')});
+    var s = document.getElementById(id);
+    if (s) { if (a === 'slide-in') s.classList.add('slide-in'); else if (a === 'slide-back') s.classList.add('slide-back'); else s.classList.add('fade-in'); }
+    var c = document.querySelector('.phone-content');
+    if (c) c.scrollTop = 0;
+}
+function setNavActive(i) {
+    document.querySelectorAll('.nav-item').forEach(function(el, x) {
+        el.classList.toggle('active', x === i);
+    });
+    moveNavIndicator(i);
+}
+function moveNavIndicator(idx) {
+    var indicator = document.getElementById('navIndicator');
+    if (!indicator) return;
+    var items = document.querySelectorAll('.nav-item');
+    if (!items[idx]) return;
+    var item = items[idx];
+    var parent = item.parentElement;
+    var itemRect = item.getBoundingClientRect();
+    var parentRect = parent.getBoundingClientRect();
+    var itemCenter = (itemRect.left - parentRect.left) + (itemRect.width / 2);
+    var indicatorWidth = 52;
+    var left = itemCenter - (indicatorWidth / 2);
+    indicator.style.transform = 'translate(' + left + 'px, -50%)';
+}
+window.addEventListener('load', function() {
+    setTimeout(function() { moveNavIndicator(0); }, 100);
+});
+window.addEventListener('resize', function() {
+    var active = document.querySelector('.nav-item.active');
+    if (active) moveNavIndicator(parseInt(active.dataset.idx || '0'));
+});
+
+function openFavorites(){renderFavorites();setNavActive(3);showScreen('favorites','fade')}
+function openOrders(){renderOrders();setNavActive(4);showScreen('orders','slide-in')}
+
+function openProduct(id) {
+    currentProduct = null;
+    for (var i = 0; i < products.length; i++) if (products[i].id === id) { currentProduct = products[i]; break; }
+    if (!currentProduct) return;
+    document.getElementById('productName').textContent = currentProduct.name;
+    document.getElementById('productPrice').textContent = formatPrice(currentProduct.price);
+    document.getElementById('productHero').style.backgroundImage = 'url("'+currentProduct.img+'")';
+    document.getElementById('addToCartBtn').textContent = t('add_cart')+' · '+formatPrice(currentProduct.price);
+    var fb = document.getElementById('favDetailBtn');
+    if (fb) {
+        var isFav = favorites.indexOf(currentProduct.id) !== -1;
+        fb.textContent = isFav ? '♥' : '♡';
+        fb.style.color = isFav ? '#E63946' : '#1A1A1A';
+    }
+    renderReviewsSection(id);
+    showScreen('product','slide-in');
+}
+function goBack() {
+    var c = currentActiveScreen();
+    if (c === 'chat') { closeChat(); return; }
+    if (c === 'product') {
+        if (previousScreen === 'favorites') { renderFavorites(); showScreen('favorites','slide-back'); setNavActive(3); return; }
+        if (previousScreen === 'catalog') { renderCatalog(); showScreen('catalog','slide-back'); setNavActive(1); return; }
+        showScreen('home','slide-back'); setNavActive(0); return;
+    }
+    if (previousScreen === 'profile') { showScreen('profile','slide-back'); setNavActive(4); }
+    else { showScreen('home','slide-back'); setNavActive(0); }
+}
+function currentActiveScreen() {
+    var el = document.querySelector('.screen.active, .screen.slide-in, .screen.slide-back, .screen.fade-in');
+    return el ? el.id : null;
+}
+function toggleFav(e,b,id) {
+    if (e) e.stopPropagation();
+    if (id === undefined) id = currentProduct ? currentProduct.id : null;
+    if (!id) return;
+    var i = favorites.indexOf(id);
+    var added = false;
+    if (i === -1) { favorites.push(id); if (b) { b.textContent = '♥'; b.style.color = '#E63946'; } added = true; }
+    else { favorites.splice(i,1); if (b) { b.textContent = '♡'; b.style.color = '#1A1A1A'; } }
+    if (added && b) {
+        b.classList.remove('pulse');
+        void b.offsetWidth;
+        b.classList.add('pulse');
+        var rect = b.getBoundingClientRect();
+        var fly = document.createElement('div');
+        fly.className = 'fly-heart';
+        fly.textContent = '❤️';
+        fly.style.left = (rect.left + rect.width/2) + 'px';
+        fly.style.top = (rect.top + rect.height/2) + 'px';
+        document.body.appendChild(fly);
+        setTimeout(function(){ fly.remove(); }, 1000);
+    }
+    var fc = document.getElementById('favCount');
+    if (fc) fc.textContent = favorites.length;
+    saveState();
+    renderProducts(); renderCatalog();
+    if (document.getElementById('favorites').classList.contains('fade-in') || document.getElementById('favorites').classList.contains('slide-in') || document.getElementById('favorites').classList.contains('active')) renderFavorites();
+}
+function selectColor(el){document.querySelectorAll('.color-option').forEach(function(c){c.classList.remove('active')});el.classList.add('active')}
+function addCurrentToCart() {
+    if (!currentProduct) return;
+    addToCart(currentProduct.id);
+    showToast(currentProduct, 'добавлен в корзину');
+}
+function addToCart(id) {
+    var p = null;
+    for (var i = 0; i < products.length; i++) if (products[i].id === id) { p = products[i]; break; }
+    if (!p) return;
+    var ex = null;
+    for (var j = 0; j < cart.length; j++) if (cart[j].id === id) { ex = cart[j]; break; }
+    if (ex) ex.qty++;
+    else cart.push({id:p.id,name:p.name,price:p.price,img:p.img,qty:1});
+    saveState();
+    updateCartUI();
+}
+function removeFromCart(id) {
+    cart = cart.filter(function(i){return i.id !== id});
+    if (appliedPromo) {
+        var t = getCartTotal(), nd = calculatePromoDiscount(appliedPromo.code, t);
+        if (nd > 0) { appliedPromo.discount = nd; promoDiscount = nd; }
+        else { appliedPromo = null; promoDiscount = 0; }
+    }
+    saveState(); updateCartUI();
+}
+function changeQty(id, d) {
+    var it = null;
+    for (var i = 0; i < cart.length; i++) if (cart[i].id === id) { it = cart[i]; break; }
+    if (!it) return;
+    it.qty += d;
+    if (it.qty <= 0) { removeFromCart(id); return; }
+    saveState(); updateCartUI();
+}
+function getCartCount(){var n=0;for(var i=0;i<cart.length;i++)n+=cart[i].qty;return n}
+function getCartTotal(){var n=0;for(var i=0;i<cart.length;i++)n+=cart[i].price*cart[i].qty;return n}
+function renderCart() {
+    var c = document.getElementById('cartContent');
+    if (!c) return;
+    var cnt = getCartCount();
+    if (cart.length === 0) {
+        c.innerHTML = '<div class="empty-state"><span class="icon">🛒</span><h2>'+t('cart_empty')+'</h2><p>'+t('cart_empty_text')+'</p><button onclick="showScreen(\'home\',\'fade\');setNavActive(0)">'+t('go_catalog')+'</button></div>';
+        return;
+    }
+    var h = '';
+    for (var i = 0; i < cart.length; i++) {
+        var it = cart[i];
+        h += '<div class="cart-item"><div class="cart-item-img" style="background-image:url(&quot;'+it.img+'&quot;)"></div>';
+        h += '<div class="cart-item-info"><div class="cart-item-title">'+it.name+'</div>';
+        h += '<div class="cart-item-price">'+formatPrice(it.price)+'</div>';
+        h += '<div class="qty-controls"><button class="qty-btn" onclick="changeQty('+it.id+',-1)">−</button>';
+        h += '<span class="qty-value">'+it.qty+'</span>';
+        h += '<button class="qty-btn" onclick="changeQty('+it.id+',1)">+</button></div></div>';
+        h += '<button class="remove-btn" onclick="removeFromCart('+it.id+')">🗑</button></div>';
+    }
+    h += '<div class="promo-section">';
+    if (appliedPromo) {
+        h += '<div class="promo-applied"><div class="promo-applied-icon">✓</div>';
+        h += '<div class="promo-applied-info"><div class="promo-applied-code">'+appliedPromo.code+'</div>';
+        h += '<div class="promo-applied-desc">'+appliedPromo.description+'</div></div>';
+        h += '<button class="promo-remove-btn" onclick="removePromo()">×</button></div>';
+    } else {
+        h += '<div class="promo-input-wrapper"><input type="text" class="promo-input" id="promoInput" placeholder="'+t('promo_ph')+'" onkeypress="if(event.key===\'Enter\')applyPromo()">';
+        h += '<button class="promo-apply-btn" onclick="applyPromo()">'+t('apply')+'</button></div>';
+        h += '<div class="promo-message" id="promoMessage"></div>';
+    }
+    h += '</div>';
+    var total = getCartTotal(), cp = appliedPromo ? appliedPromo.discount : 0;
+    var ap = total - cp, mbd = Math.floor(ap * 0.3);
+    var cbd = useBonuses ? Math.min(userBonuses, mbd) : 0;
+    bonusDiscount = cbd;
+    var ft = ap - cbd;
+    h += '<div class="cart-summary">';
+    h += '<div class="summary-row"><span>'+t('items')+' ('+cnt+')</span><span>'+formatPrice(total)+'</span></div>';
+    h += '<div class="summary-row"><span>'+t('delivery_row')+'</span><span>'+t('free')+'</span></div>';
+    if (cp > 0) h += '<div class="summary-row promo-row"><span>'+appliedPromo.code+'</span><span>− '+formatPrice(cp)+'</span></div>';
+    if (cbd > 0) h += '<div class="summary-row bonus-row"><span>'+t('bonus')+'</span><span>− '+formatPrice(cbd)+'</span></div>';
+    h += '<div class="summary-row total"><span>'+t('total')+'</span><span>'+formatPrice(ft)+'</span></div></div>';
+    h += '<button class="checkout-btn" onclick="openCheckout()">'+t('checkout')+'</button>';
+    c.innerHTML = h;
+}
+function updateCartUI() {
+    var cnt = getCartCount();
+    var b = document.getElementById('cartBadge');
+    if (b) { b.textContent = cnt; b.classList.toggle('show', cnt > 0); }
+    renderCart();
+}
+
+function renderCheckoutAddresses() {
+    var c = document.getElementById('checkoutAddresses');
+    if (!c) return;
+    if (userAddresses.length === 0) {
+        c.innerHTML = '<div class="empty-checkout-hint">' + t('no_address_hint') + '</div>' +
+            '<button class="select-add-btn" onclick="addNewAddress();renderCheckoutAddresses()">' + t('add_address') + '</button>';
+        return;
+    }
+    var h = '';
+    var sel = userAddresses.find(function(a){return a.id===checkoutSelectedAddressId}) || userAddresses.find(function(a){return a.isDefault}) || userAddresses[0];
+    checkoutSelectedAddressId = sel.id;
+    for (var i = 0; i < userAddresses.length; i++) {
+        var a = userAddresses[i];
+        h += '<div class="select-picker'+(a.id===checkoutSelectedAddressId?' active':'')+'" onclick="selectCheckoutAddress('+a.id+')">';
+        h += '<span class="select-picker-icon">'+(a.icon||'📍')+'</span>';
+        h += '<div class="select-picker-info"><div class="select-picker-title">'+a.label+'</div>';
+        h += '<div class="select-picker-sub">'+a.city+', '+a.address+'</div></div>';
+        h += '<div class="select-picker-check">✓</div></div>';
+    }
+    h += '<button class="select-add-btn" onclick="addNewAddress();renderCheckoutAddresses()">' + t('add_address') + '</button>';
+    c.innerHTML = h;
+}
+function selectCheckoutAddress(id) {
+    checkoutSelectedAddressId = id;
+    renderCheckoutAddresses();
+}
+
+function renderCheckoutCards() {
+    var c = document.getElementById('checkoutCards');
+    if (!c) return;
+    if (userCards.length === 0) {
+        c.innerHTML = '<div class="empty-checkout-hint">' + t('no_card_hint') + '</div>' +
+            '<button class="select-add-btn" onclick="addNewCard();renderCheckoutCards()">' + t('add_card') + '</button>';
+        return;
+    }
+    var h = '';
+    var sel = userCards.find(function(a){return a.id===checkoutSelectedCardId}) || userCards.find(function(a){return a.isDefault}) || userCards[0];
+    checkoutSelectedCardId = sel.id;
+    for (var i = 0; i < userCards.length; i++) {
+        var card = userCards[i];
+        h += '<div class="select-picker'+(card.id===checkoutSelectedCardId?' active':'')+'" onclick="selectCheckoutCard('+card.id+')">';
+        h += '<span class="select-picker-icon">💳</span>';
+        h += '<div class="select-picker-info"><div class="select-picker-title">'+card.system+' •••• '+card.number+'</div>';
+        h += '<div class="select-picker-sub">'+card.holder+' · '+card.expiry+'</div></div>';
+        h += '<div class="select-picker-check">✓</div></div>';
+    }
+    h += '<button class="select-add-btn" onclick="addNewCard();renderCheckoutCards()">' + t('add_card') + '</button>';
+    c.innerHTML = h;
+}
+function selectCheckoutCard(id) {
+    checkoutSelectedCardId = id;
+    renderCheckoutCards();
+}
+
+function openCheckout() {
+    if (cart.length === 0) return;
+    if (!isLoggedIn()) { goToLogin('checkout'); return; }
+    var total = getCartTotal(), cnt = getCartCount();
+    var cp = appliedPromo ? appliedPromo.discount : 0;
+    var ap = total - cp, mbd = Math.floor(ap * 0.3);
+    var ab = Math.min(userBonuses, mbd);
+    if (document.getElementById('checkoutCount')) document.getElementById('checkoutCount').textContent = cnt;
+    if (document.getElementById('checkoutSubtotal')) document.getElementById('checkoutSubtotal').textContent = formatPrice(total);
+    var sub = document.getElementById('bonusToggleSubtitle');
+    if (sub) sub.textContent = ab > 0 ? t('bonus')+': '+userBonuses.toLocaleString('ru-RU')+' ₽' : t('use_bonuses');
+    var pr = document.getElementById('promoRow');
+    if (pr) {
+        if (cp > 0 && appliedPromo) {
+            pr.style.display = 'flex';
+            document.getElementById('promoRowLabel').textContent = appliedPromo.code;
+            document.getElementById('promoDiscount').textContent = '− '+formatPrice(cp);
+        } else pr.style.display = 'none';
+    }
+    bonusDiscount = useBonuses ? ab : 0;
+    var ft = ap - bonusDiscount;
+    var br = document.getElementById('bonusRow');
+    if (br) {
+        if (bonusDiscount > 0) { br.style.display = 'flex'; document.getElementById('bonusDiscount').textContent = '− '+formatPrice(bonusDiscount); }
+        else br.style.display = 'none';
+    }
+    if (document.getElementById('checkoutTotal')) document.getElementById('checkoutTotal').textContent = formatPrice(ft);
+    var bs = document.getElementById('bonusSwitch');
+    if (bs) bs.classList.toggle('on', useBonuses);
+    renderCheckoutAddresses();
+    renderCheckoutCards();
+    showScreen('checkout','slide-in');
+}
+function toggleUseBonuses() {
+    var total = getCartTotal();
+    var ap = total - (appliedPromo ? appliedPromo.discount : 0);
+    var md = Math.floor(ap * 0.3);
+    if (userBonuses === 0 || md === 0) { alert('Недостаточно бонусов'); return; }
+    useBonuses = !useBonuses;
+    openCheckout();
+}
+function placeOrder() {
+    if (userAddresses.length === 0) { alert(t('no_address_hint')); return; }
+    if (userCards.length === 0) { alert(t('no_card_hint')); return; }
+    var total = getCartTotal(), cp = appliedPromo ? appliedPromo.discount : 0;
+    var ap = total - cp, ft = ap - (useBonuses ? bonusDiscount : 0);
+    var orderNum = '#' + (1000 + Math.floor(Math.random() * 9000));
+    var today = new Date();
+    var months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+    var dateStr = today.getDate() + ' ' + months[today.getMonth()];
+    var itemCount = getCartCount();
+    userOrders.unshift({id:orderNum, date:dateStr, total:Math.round(ft), items:itemCount, status:'shipping'});
+    if (useBonuses && bonusDiscount > 0) {
+        userBonuses -= bonusDiscount;
+        demoBonusHistory.unshift({icon:'🛍',title:'Списание '+orderNum,date:dateStr,amount:bonusDiscount,type:'minus'});
+    }
+    var earned = Math.floor(ft * 0.05);
+    userBonuses += earned;
+    if (earned > 0) demoBonusHistory.unshift({icon:'⭐',title:'Кэшбэк '+orderNum,date:dateStr,amount:earned,type:'plus'});
+    addNotification('📦','notif_order_title','notif_order_text', orderNum+'|'+Math.round(ft));
+    if (earned > 0) addNotification('⭐','notif_bonus_title','notif_bonus_text', earned);
+    saveState();
+    renderBonusCard();
+    var oe = document.getElementById('ordersCount');
+    if (oe) oe.textContent = userOrders.length;
+    var sb = document.getElementById('successBonus');
+    if (sb) {
+        if (earned > 0) { sb.textContent = '+ '+earned.toLocaleString('ru-RU')+' '+(currentLanguage==='en'?'bonuses':currentLanguage==='kz'?'бонус':'бонусов'); sb.style.display = 'inline-block'; }
+        else sb.style.display = 'none';
+    }
+    showScreen('success','fade');
+}
+function finishOrder() {
+    cart = []; useBonuses = false; bonusDiscount = 0;
+    appliedPromo = null; promoDiscount = 0;
+    checkoutSelectedAddressId = null;
+    checkoutSelectedCardId = null;
+    saveState(); updateCartUI();
+    showScreen('home','fade'); setNavActive(0);
+}
+function initTheme() {
+    var s = safeGet('funica-theme');
+    var i = document.getElementById('themeIcon');
+    if (s === 'dark') { document.body.classList.add('dark'); if (i) i.textContent = '☀️'; }
+    else if (i) i.textContent = '🌙';
+}
+function toggleTheme() {
+    var i = document.getElementById('themeIcon');
+    var d = document.body.classList.toggle('dark');
+    if (i) i.textContent = d ? '☀️' : '🌙';
+    safeSet('funica-theme', d ? 'dark' : 'light');
+}
+function clearAllData() {
+    if (!confirm('Удалить все данные?')) return;
+    safeClear();
+    cart = []; favorites = []; userOrders = []; userNotifications = [];
+    userBonuses = 0; useBonuses = false; bonusDiscount = 0;
+    appliedPromo = null; promoDiscount = 0;
+    userReviews = {}; userAddresses = []; userCards = []; chatMessages = [];
+    checkoutSelectedAddressId = null; checkoutSelectedCardId = null;
+    document.getElementById('favCount').textContent = '0';
+    updateCartUI(); renderProducts(); renderBonusCard(); renderAddresses(); renderPayments();
+    document.body.classList.remove('dark');
+    document.getElementById('themeIcon').textContent = '🌙';
+    currentSlide = 0; goToSlide(0);
+    showScreen('onboarding','fade');
+    document.getElementById('bottomNav').classList.add('hidden');
+}
+document.addEventListener('input', function(e){ if (e.target && e.target.id === 'reviewText') updateSubmitButton(); });
+
+// ⏱ ТАЙМЕР СКИДКИ
+var saleEndTime = Date.now() + (2*3600 + 45*60 + 18) * 1000;
+function updateSaleTimer() {
+    var diff = Math.max(0, saleEndTime - Date.now());
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    var el = document.getElementById('bannerTimer');
+    if (el) el.textContent = 'Скидка кончится через ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+setInterval(updateSaleTimer, 1000);
+updateSaleTimer();
+
+// 🔔 ТОСТ-УВЕДОМЛЕНИЯ
+function showToast(product, text) {
+    var container = document.getElementById('toastContainer');
+    if (!container) return;
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<div class="toast-img" style="background-image:url(&quot;'+product.img+'&quot;)"></div>' +
+                   '<div class="toast-text"><strong>'+product.name+'</strong><div class="toast-sub">✓ '+text+'</div></div>';
+    container.appendChild(el);
+    setTimeout(function(){
+        el.classList.add('out');
+        setTimeout(function(){ el.remove(); }, 300);
+    }, 2200);
+}
+
+// 🎡 КОЛЕСО ФОРТУНЫ
+var WHEEL_PRIZES = [50, 75, 100, 150, 200, 250, 300, 500];
+var wheelSpinning = false;
+var wheelRotated = 0;
+
+function buildWheel() {
+    var wheel = document.getElementById('wheel');
+    if (!wheel) return;
+    var n = WHEEL_PRIZES.length;
+    var anglePer = 360 / n;
+    var cx = 100, cy = 100, r = 100;
+    var colors = ['#C8B8A0', '#8A7A6A'];
+    var svg = '<svg viewBox="0 0 200 200" class="wheel-svg">';
+    for (var i = 0; i < n; i++) {
+        var startDeg = i * anglePer - 90;
+        var endDeg = (i + 1) * anglePer - 90;
+        var x1 = cx + r * Math.cos(startDeg * Math.PI / 180);
+        var y1 = cy + r * Math.sin(startDeg * Math.PI / 180);
+        var x2 = cx + r * Math.cos(endDeg * Math.PI / 180);
+        var y2 = cy + r * Math.sin(endDeg * Math.PI / 180);
+        svg += '<path d="M' + cx + ',' + cy + ' L' + x1.toFixed(2) + ',' + y1.toFixed(2) + ' A' + r + ',' + r + ' 0 0,1 ' + x2.toFixed(2) + ',' + y2.toFixed(2) + ' Z" fill="' + colors[i % 2] + '"/>';
+        var midDeg = (startDeg + endDeg) / 2;
+        var tx = cx + (r * 0.62) * Math.cos(midDeg * Math.PI / 180);
+        var ty = cy + (r * 0.62) * Math.sin(midDeg * Math.PI / 180);
+        svg += '<text x="' + tx.toFixed(2) + '" y="' + (ty + 5).toFixed(2) + '" text-anchor="middle" font-size="14" font-weight="700" fill="#FFF">' + WHEEL_PRIZES[i] + '</text>';
+    }
+    svg += '</svg>';
+    wheel.innerHTML = svg;
+}
+
+function openWheel() {
+    buildWheel();
+    var overlay = document.getElementById('wheelModalOverlay');
+    if (overlay) overlay.classList.add('show');
+    var today = new Date().toDateString();
+    var lastSpin = safeGet('funica-wheel-last-spin');
+    var btn = document.getElementById('wheelSpinBtn');
+    var subtitle = document.getElementById('wheelSubtitle');
+    var result = document.getElementById('wheelResult');
+    if (lastSpin === today) {
+        if (btn) { btn.disabled = true; btn.textContent = 'Приходите завтра'; }
+        if (subtitle) subtitle.textContent = 'Вы уже крутили сегодня. Возвращайтесь завтра!';
+        if (result) result.textContent = '';
+    } else {
+        if (btn) { btn.disabled = false; btn.textContent = 'Крутить!'; }
+        if (subtitle) subtitle.textContent = 'Крутите раз в день и получайте бонусы!';
+        if (result) result.textContent = '';
+    }
+}
+
+function closeWheelModal() {
+    var overlay = document.getElementById('wheelModalOverlay');
+    if (overlay) overlay.classList.remove('show');
+}
+
+function closeWheelModalOnBg(e) {
+    if (e.target.id === 'wheelModalOverlay') closeWheelModal();
+}
+
+function spinWheel() {
+    if (wheelSpinning) return;
+    var today = new Date().toDateString();
+    if (safeGet('funica-wheel-last-spin') === today) return;
+    wheelSpinning = true;
+    var btn = document.getElementById('wheelSpinBtn');
+    var result = document.getElementById('wheelResult');
+    if (btn) btn.disabled = true;
+    if (result) result.textContent = '';
+    var idx = Math.floor(Math.random() * WHEEL_PRIZES.length);
+    var prize = WHEEL_PRIZES[idx];
+    var anglePer = 360 / WHEEL_PRIZES.length;
+    var targetAngle = 360 * 5 + (360 - (idx + 0.5) * anglePer);
+    wheelRotated += targetAngle;
+    var wheel = document.getElementById('wheel');
+    if (wheel) wheel.style.transform = 'rotate(' + wheelRotated + 'deg)';
+    setTimeout(function() {
+        wheelSpinning = false;
+        userBonuses += prize;
+        if (isLoggedIn()) saveState();
+        renderBonusCard();
+        if (result) result.textContent = '🎉 Вы выиграли +' + prize + ' бонусов!';
+        safeSet('funica-wheel-last-spin', today);
+        if (btn) { btn.disabled = true; btn.textContent = 'Приходите завтра'; }
+    }, 4200);
+}
+
+try {
+    initTheme();
+    var sl = safeGet('funica-language');
+    if (sl) currentLanguage = sl;
+    var od = safeGet('funica-onboarding-done');
+    if (!od) {
+        applyLanguage();
+        showScreen('onboarding','fade');
+        document.getElementById('bottomNav').classList.add('hidden');
+    } else {
+        loadState();
+        applyLanguage();
+        renderProducts(); renderCatalog(); updateCartUI(); renderBonusCard(); renderAddresses(); renderPayments();
+        document.getElementById('favCount').textContent = favorites.length;
+        showScreen('home','fade');
+        setNavActive(0);
+        document.getElementById('bottomNav').classList.remove('hidden');
+        setTimeout(function(){ moveNavIndicator(0); }, 300);
+    }
+    updateSaleTimer();
+    console.log('Funica loaded');
+} catch (err) {
+    var b = document.getElementById('debugBanner');
+    b.textContent = '⚠ ' + err.message;
+    b.classList.add('show');
+    console.error(err);
+}
+</script>
+</body>
+</html>
